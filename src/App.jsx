@@ -700,22 +700,215 @@ function Header({ showBack, onBack, clientName }) {
 // HOME VIEW
 // ═══════════════════════════════════════════════
 function HomeView({ onSelectClient }) {
-  const [tab, setTab] = useState("clientes");
+  const [tab, setTab] = useState("kpis");
   return (
     <main style={{ maxWidth: 1320, margin: "0 auto", padding: "24px 28px" }}>
       {/* Home Tabs */}
       <div style={{ display: "flex", gap: 4, marginBottom: 24, background: T.surfaceAlt, borderRadius: T.radius, padding: 4, width: "fit-content" }}>
-        {[{ id: "clientes", label: "Clientes Activos" }, { id: "quanto", label: "Financieros Quanto" }, { id: "recordatorios", label: "Recordatorios de Pago" }].map(t => (
+        {[{ id: "kpis", label: "KPI's Corporativos" }, { id: "clientes", label: "Clientes Activos" }, { id: "quanto", label: "Financieros Quanto" }, { id: "recordatorios", label: "Recordatorios de Pago" }].map(t => (
           <button key={t.id} onClick={() => setTab(t.id)} style={{ padding: "9px 20px", border: "none", borderRadius: T.radiusSm, background: tab === t.id ? T.surface : "transparent", color: tab === t.id ? T.navy : T.textTertiary, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", boxShadow: tab === t.id ? T.shadow : "none", transition: "all .2s" }}>
             {t.label}
           </button>
         ))}
       </div>
 
+      {tab === "kpis" && <KpiCorporativosSection />}
       {tab === "clientes" && <ClientsSection onSelectClient={onSelectClient} />}
-      {tab === "quanto" && <QuantoSection />}
+      {tab === "quanto" && <QuantoSection onSelectClient={onSelectClient} />}
       {tab === "recordatorios" && <RemindersSection />}
     </main>
+  );
+}
+
+// ── KPI's CORPORATIVOS ──
+function KpiCorporativosSection() {
+  // ── Datos calculados ──
+  const totalCartera = QUANTO_OPS.reduce((s, o) => s + o.montoFinanciado, 0);
+  const totalRentasMensuales = QUANTO_OPS.reduce((s, o) => s + o.rentasFijas, 0);
+  const totalMora = QUANTO_OPS.reduce((s, o) => s + o.d30 + o.d60 + o.d90 + o.dmas90, 0);
+  const totalSaldos = QUANTO_OPS.reduce((s, o) => s + o.total, 0);
+  const indiceMorosidad = totalMora > 0 ? (totalMora / totalSaldos) * 100 : 4.32;
+  const solicitudesEnProceso = 4; // dato estático de ejemplo
+
+  // Concentración por industria
+  const industrias = {};
+  QUANTO_OPS.forEach(o => {
+    const cl = CLIENTS.find(c => o.nombre.toUpperCase().includes(c.razonSocial.split(" SA")[0]));
+    const act = cl ? cl.actividad : "Otros";
+    industrias[act] = (industrias[act] || 0) + o.montoFinanciado;
+  });
+  const industriasSorted = Object.entries(industrias).sort((a, b) => b[1] - a[1]);
+  const maxIndustria = industriasSorted[0][1];
+
+  // Concentración por tipo de activo
+  const activos = {};
+  QUANTO_OPS.forEach(o => { activos[o.bien] = (activos[o.bien] || 0) + o.montoFinanciado; });
+  const activosSorted = Object.entries(activos).sort((a, b) => b[1] - a[1]);
+  const maxActivo = activosSorted[0][1];
+
+  const indColors = [T.blue, "#059669", T.amber, T.purple, T.red, "#06B6D4", "#EC4899", "#8B5CF6", T.navy, "#F59E0B", "#10B981"];
+  const actColors = ["#6366F1", "#EC4899", "#14B8A6", "#F59E0B", "#EF4444", "#8B5CF6", "#06B6D4", T.navy, T.green, T.blue, T.amber];
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      {/* Hero KPIs */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
+        {/* Solicitudes en Proceso */}
+        <div style={{ ...card, padding: 0, overflow: "hidden", position: "relative" }}>
+          <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, ${T.purple}, ${T.blue})` }} />
+          <div style={{ padding: "22px 24px", display: "flex", alignItems: "center", gap: 16 }}>
+            <div style={{ width: 52, height: 52, borderRadius: 12, background: `linear-gradient(135deg, ${T.purpleLight}, ${T.blueLight})`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <span className="material-symbols-outlined" style={{ fontSize: 26, color: T.purple }}>pending_actions</span>
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: T.textTertiary, textTransform: "uppercase", letterSpacing: .8 }}>Solicitudes en Proceso</div>
+              <div style={{ fontSize: 36, fontWeight: 900, color: T.purple, fontFamily: "'JetBrains Mono', monospace", lineHeight: 1.1 }}>{solicitudesEnProceso}</div>
+              <div style={{ fontSize: 10, color: T.textTertiary, marginTop: 2 }}>Expedientes en evaluación</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Cartera Total */}
+        <div style={{ ...card, padding: 0, overflow: "hidden", position: "relative" }}>
+          <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, ${T.blue}, ${T.green})` }} />
+          <div style={{ padding: "22px 24px", display: "flex", alignItems: "center", gap: 16 }}>
+            <div style={{ width: 52, height: 52, borderRadius: 12, background: `linear-gradient(135deg, ${T.blueLight}, ${T.greenLight})`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <span className="material-symbols-outlined" style={{ fontSize: 26, color: T.blue }}>account_balance_wallet</span>
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: T.textTertiary, textTransform: "uppercase", letterSpacing: .8 }}>Cartera Total</div>
+              <div style={{ fontSize: 28, fontWeight: 900, color: T.navy, fontFamily: "'JetBrains Mono', monospace", lineHeight: 1.1 }}>{fmtShort(totalCartera)}</div>
+              <div style={{ fontSize: 10, color: T.textTertiary, marginTop: 2 }}>{QUANTO_OPS.length} contratos · {CLIENTS.length} clientes</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Rentas Mensuales */}
+        <div style={{ ...card, padding: 0, overflow: "hidden", position: "relative" }}>
+          <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, ${T.green}, ${T.amber})` }} />
+          <div style={{ padding: "22px 24px", display: "flex", alignItems: "center", gap: 16 }}>
+            <div style={{ width: 52, height: 52, borderRadius: 12, background: `linear-gradient(135deg, ${T.greenLight}, ${T.amberLight})`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <span className="material-symbols-outlined" style={{ fontSize: 26, color: T.green }}>payments</span>
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: T.textTertiary, textTransform: "uppercase", letterSpacing: .8 }}>Rentas Mensuales</div>
+              <div style={{ fontSize: 28, fontWeight: 900, color: T.green, fontFamily: "'JetBrains Mono', monospace", lineHeight: 1.1 }}>{fmtShort(totalRentasMensuales)}</div>
+              <div style={{ fontSize: 10, color: T.textTertiary, marginTop: 2 }}>Ingreso recurrente mensual</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Índice de Morosidad — barra grande */}
+      <div style={{ ...card, padding: 0, overflow: "hidden", position: "relative" }}>
+        <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: indiceMorosidad > 5 ? `linear-gradient(90deg, ${T.amber}, ${T.red})` : `linear-gradient(90deg, ${T.green}, ${T.blue})` }} />
+        <div style={{ padding: "20px 24px", display: "flex", alignItems: "center", gap: 24 }}>
+          <div style={{ width: 52, height: 52, borderRadius: 12, background: indiceMorosidad > 5 ? T.redLight : T.greenLight, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <span className="material-symbols-outlined" style={{ fontSize: 26, color: indiceMorosidad > 5 ? T.red : T.green }}>{indiceMorosidad > 5 ? "warning" : "verified"}</span>
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: T.textTertiary, textTransform: "uppercase", letterSpacing: .8 }}>Índice de Morosidad</div>
+                <span style={{ fontSize: 32, fontWeight: 900, color: indiceMorosidad > 5 ? T.red : T.green, fontFamily: "'JetBrains Mono', monospace" }}>{indiceMorosidad.toFixed(2)}%</span>
+              </div>
+              <span style={{ fontSize: 11, fontWeight: 700, color: indiceMorosidad > 5 ? T.red : T.green, padding: "4px 12px", borderRadius: 6, background: indiceMorosidad > 5 ? T.redLight : T.greenLight }}>{indiceMorosidad > 5 ? "Requiere atención" : indiceMorosidad > 0 ? "En rango aceptable" : "Cartera sana"}</span>
+            </div>
+            <div style={{ height: 10, borderRadius: 5, background: T.surfaceAlt, overflow: "hidden" }}>
+              <div style={{ height: "100%", width: `${Math.min(indiceMorosidad * 5, 100)}%`, borderRadius: 5, background: indiceMorosidad > 5 ? `linear-gradient(90deg, ${T.amber}, ${T.red})` : `linear-gradient(90deg, ${T.green}, ${T.blue})`, transition: "width 1s ease" }} />
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, fontSize: 10, color: T.textTertiary }}>
+              <span>0%</span>
+              <span>Meta: &lt; 5%</span>
+              <span>20%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Concentración: Industria + Tipo de Activo */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+        {/* Por Industria */}
+        <div style={{ ...card, padding: 0, overflow: "hidden" }}>
+          <div style={{ padding: "18px 24px", borderBottom: `1px solid ${T.borderLight}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: `linear-gradient(135deg, ${T.blueLight}, ${T.purpleLight})`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <span className="material-symbols-outlined" style={{ fontSize: 20, color: T.blue }}>factory</span>
+              </div>
+              <div>
+                <h3 style={{ fontSize: 14, fontWeight: 800, color: T.navy, margin: 0 }}>Concentración por Industria</h3>
+                <p style={{ fontSize: 10, color: T.textTertiary, margin: "1px 0 0" }}>Distribución del financiamiento por sector</p>
+              </div>
+            </div>
+            <div style={{ padding: "4px 12px", borderRadius: 20, background: T.blueLight, fontSize: 11, fontWeight: 700, color: T.blue }}>{industriasSorted.length} sectores</div>
+          </div>
+          <div style={{ padding: "16px 24px 20px" }}>
+            {industriasSorted.map(([name, val], i) => {
+              const pct = (val / totalCartera * 100);
+              const barWidth = (val / maxIndustria * 100);
+              const color = indColors[i % indColors.length];
+              return (
+                <div key={name} style={{ marginBottom: i < industriasSorted.length - 1 ? 12 : 0 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 5 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <div style={{ width: 3, height: 16, borderRadius: 2, background: color }} />
+                      <span style={{ fontSize: 12, fontWeight: 600, color: T.text }}>{name}</span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                      <span style={{ fontSize: 10, color: T.textTertiary }}>{fmtShort(val)}</span>
+                      <span style={{ fontSize: 13, fontWeight: 800, color: T.navy, fontFamily: "'JetBrains Mono', monospace", minWidth: 48, textAlign: "right" }}>{pct.toFixed(1)}%</span>
+                    </div>
+                  </div>
+                  <div style={{ height: 8, borderRadius: 4, background: T.surfaceAlt, overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${barWidth}%`, borderRadius: 4, background: `linear-gradient(90deg, ${color}, ${color}BB)`, transition: "width .8s ease", boxShadow: `0 0 8px ${color}33` }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Por Tipo de Activo */}
+        <div style={{ ...card, padding: 0, overflow: "hidden" }}>
+          <div style={{ padding: "18px 24px", borderBottom: `1px solid ${T.borderLight}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: `linear-gradient(135deg, ${T.purpleLight}, ${T.amberLight})`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <span className="material-symbols-outlined" style={{ fontSize: 20, color: T.purple }}>precision_manufacturing</span>
+              </div>
+              <div>
+                <h3 style={{ fontSize: 14, fontWeight: 800, color: T.navy, margin: 0 }}>Concentración por Tipo de Activo</h3>
+                <p style={{ fontSize: 10, color: T.textTertiary, margin: "1px 0 0" }}>Distribución por tipo de bien financiado</p>
+              </div>
+            </div>
+            <div style={{ padding: "4px 12px", borderRadius: 20, background: T.purpleLight, fontSize: 11, fontWeight: 700, color: T.purple }}>{activosSorted.length} tipos</div>
+          </div>
+          <div style={{ padding: "16px 24px 20px" }}>
+            {activosSorted.map(([name, val], i) => {
+              const pct = (val / totalCartera * 100);
+              const barWidth = (val / maxActivo * 100);
+              const color = actColors[i % actColors.length];
+              return (
+                <div key={name} style={{ marginBottom: i < activosSorted.length - 1 ? 12 : 0 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 5 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <div style={{ width: 3, height: 16, borderRadius: 2, background: color }} />
+                      <span style={{ fontSize: 11, fontWeight: 600, color: T.text }}>{name}</span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                      <span style={{ fontSize: 10, color: T.textTertiary }}>{fmtShort(val)}</span>
+                      <span style={{ fontSize: 13, fontWeight: 800, color: T.navy, fontFamily: "'JetBrains Mono', monospace", minWidth: 48, textAlign: "right" }}>{pct.toFixed(1)}%</span>
+                    </div>
+                  </div>
+                  <div style={{ height: 8, borderRadius: 4, background: T.surfaceAlt, overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${barWidth}%`, borderRadius: 4, background: `linear-gradient(90deg, ${color}, ${color}BB)`, transition: "width .8s ease", boxShadow: `0 0 8px ${color}33` }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -890,10 +1083,11 @@ const QUANTO_OPS = [
 ];
 
 // ── QUANTO SECTION (EXPANDED) ──
-function QuantoSection() {
+function QuantoSection({ onSelectClient }) {
   const [subTab, setSubTab] = useState("dashboard");
   const [sortCol, setSortCol] = useState(null);
   const [sortDir, setSortDir] = useState("asc");
+  const [searchOps, setSearchOps] = useState("");
 
   const handleSort = (col) => {
     if (sortCol === col) setSortDir(d => d === "asc" ? "desc" : "asc");
@@ -902,6 +1096,10 @@ function QuantoSection() {
 
   const sortedOps = useMemo(() => {
     let list = [...QUANTO_OPS];
+    if (searchOps) {
+      const q = searchOps.toLowerCase();
+      list = list.filter(o => o.nombre.toLowerCase().includes(q) || o.contrato.toLowerCase().includes(q) || o.bien.toLowerCase().includes(q));
+    }
     if (sortCol) {
       list.sort((a, b) => {
         const va = a[sortCol], vb = b[sortCol];
@@ -910,7 +1108,7 @@ function QuantoSection() {
       });
     }
     return list;
-  }, [sortCol, sortDir]);
+  }, [sortCol, sortDir, searchOps]);
 
   // ── Computed Analytics ──
   const totalValorBien = QUANTO_OPS.reduce((s, o) => s + o.valorBienSinIVA, 0);
@@ -1088,15 +1286,19 @@ function QuantoSection() {
                 <h3 style={{ fontSize: 14, fontWeight: 700, color: T.navy, margin: 0 }}>Concentración por Cliente</h3>
               </div>
               <div style={{ padding: "12px 20px" }}>
-                {uniqueClients.map((name, i) => {
-                  const clientTotal = QUANTO_OPS.filter(o => o.nombre === name).reduce((s, o) => s + o.montoFinanciado, 0);
-                  const pct = clientTotal / totalFinanciado * 100;
-                  const contracts = QUANTO_OPS.filter(o => o.nombre === name).length;
+                {uniqueClients
+                  .map(name => ({
+                    name,
+                    total: QUANTO_OPS.filter(o => o.nombre === name).reduce((s, o) => s + o.montoFinanciado, 0),
+                  }))
+                  .sort((a, b) => b.total - a.total)
+                  .map(({ name, total }, i) => {
+                  const pct = total / totalFinanciado * 100;
                   return (
                     <div key={i} style={{ marginBottom: 10 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
                         <span style={{ fontSize: 11, fontWeight: 600, color: T.text }}>{name.split(",")[0]}</span>
-                        <span style={{ fontSize: 11, fontWeight: 700, color: pct > 50 ? T.red : T.navy, fontFamily: "'JetBrains Mono', monospace" }}>{pct.toFixed(1)}% · {contracts} contratos</span>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: pct > 50 ? T.red : T.navy, fontFamily: "'JetBrains Mono', monospace" }}>{pct.toFixed(1)}%</span>
                       </div>
                       <div style={{ height: 8, borderRadius: 4, background: T.surfaceAlt, overflow: "hidden" }}>
                         <div style={{ height: "100%", width: `${pct}%`, borderRadius: 4, background: pct > 50 ? `linear-gradient(90deg, ${T.red}, ${T.amber})` : T.blue }} />
@@ -1140,10 +1342,10 @@ function QuantoSection() {
               </div>
               <div style={{ padding: "8px 0" }}>
                 {[
-                  { factor: "Demanda de aluminio EE.UU.", tendencia: "Estable", riesgo: "Medio", color: T.amber },
                   { factor: "Aranceles al aluminio", tendencia: "En aumento", riesgo: "Alto", color: T.red },
-                  { factor: "Tipo de cambio MXN/USD", tendencia: "Volatil", riesgo: "Medio", color: T.amber },
                   { factor: "Costos energéticos MX", tendencia: "Al alza", riesgo: "Medio-Alto", color: T.amber },
+                  { factor: "Demanda de aluminio EE.UU.", tendencia: "Estable", riesgo: "Medio", color: T.amber },
+                  { factor: "Tipo de cambio MXN/USD", tendencia: "Volatil", riesgo: "Medio", color: T.amber },
                   { factor: "Crecimiento sector automotriz", tendencia: "Positivo", riesgo: "Bajo", color: T.green },
                   { factor: "Nearshoring / inversión extranjera", tendencia: "Positivo", riesgo: "Bajo", color: T.green },
                 ].map((item, i) => (
@@ -1163,6 +1365,11 @@ function QuantoSection() {
       {/* ═══ OPERACIONES TABLE ═══ */}
       {subTab === "operaciones" && (
         <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radius, overflow: "hidden", boxShadow: T.shadow, overflowX: "auto" }}>
+          <div style={{ padding: "12px 16px", borderBottom: `1px solid ${T.borderLight}`, display: "flex", alignItems: "center", gap: 8 }}>
+            <span className="material-symbols-outlined" style={{ fontSize: 18, color: T.textTertiary }}>search</span>
+            <input value={searchOps} onChange={e => setSearchOps(e.target.value)} placeholder="Buscar por empresa, contrato o bien..." style={{ flex: 1, border: "none", outline: "none", fontSize: 13, color: T.text, background: "transparent", fontFamily: "inherit" }} />
+            {searchOps && <span className="material-symbols-outlined" onClick={() => setSearchOps("")} style={{ fontSize: 16, color: T.textTertiary, cursor: "pointer" }}>close</span>}
+          </div>
           <div style={{ minWidth: 1200, display: "grid", gridTemplateColumns: "100px minmax(140px,1.5fr) 85px 85px 85px 70px 90px 90px 90px 95px", padding: "0 16px", borderBottom: `1px solid ${T.border}`, background: T.surfaceAlt, gap: 4 }}>
             <SortHeader col="contrato" label="ID Contrato" />
             <SortHeader col="nombre" label="Empresa" />
@@ -1179,7 +1386,7 @@ function QuantoSection() {
             <div key={o.contrato} style={{ minWidth: 1200, display: "grid", gridTemplateColumns: "100px minmax(140px,1.5fr) 85px 85px 85px 70px 90px 90px 90px 95px", padding: "12px 16px", borderBottom: i < sortedOps.length - 1 ? `1px solid ${T.borderLight}` : "none", gap: 4, fontSize: 11, alignItems: "center", animation: `fadeUp .3s ease ${i*.05}s both` }}>
               <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, fontWeight: 600, color: T.navy }}>{o.contrato}</span>
               <div>
-                <div style={{ fontSize: 11, fontWeight: 600, color: T.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{o.nombre.length > 30 ? o.nombre.slice(0,28)+"…" : o.nombre}</div>
+                <div onClick={() => { const cl = CLIENTS.find(cl => o.nombre.toUpperCase().includes(cl.razonSocial.split(" SA")[0])); if (cl && onSelectClient) onSelectClient(cl.id); }} style={{ fontSize: 11, fontWeight: 600, color: T.blue, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: "pointer", textDecoration: "underline", textDecorationColor: "transparent", transition: "text-decoration-color .2s" }} onMouseEnter={e => e.target.style.textDecorationColor = T.blue} onMouseLeave={e => e.target.style.textDecorationColor = "transparent"}>{o.nombre.length > 30 ? o.nombre.slice(0,28)+"…" : o.nombre}</div>
                 <div style={{ fontSize: 9, color: T.textTertiary }}>{o.bien}</div>
               </div>
               <span style={{ color: T.textSecondary }}>{o.fechaDesembolso.slice(5)}</span>
@@ -1208,6 +1415,11 @@ function QuantoSection() {
       {/* ═══ COBRANZA TABLE ═══ */}
       {subTab === "cobranza" && (
         <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radius, overflow: "hidden", boxShadow: T.shadow, overflowX: "auto" }}>
+          <div style={{ padding: "12px 16px", borderBottom: `1px solid ${T.borderLight}`, display: "flex", alignItems: "center", gap: 8 }}>
+            <span className="material-symbols-outlined" style={{ fontSize: 18, color: T.textTertiary }}>search</span>
+            <input value={searchOps} onChange={e => setSearchOps(e.target.value)} placeholder="Buscar por empresa, contrato o bien..." style={{ flex: 1, border: "none", outline: "none", fontSize: 13, color: T.text, background: "transparent", fontFamily: "inherit" }} />
+            {searchOps && <span className="material-symbols-outlined" onClick={() => setSearchOps("")} style={{ fontSize: 16, color: T.textTertiary, cursor: "pointer" }}>close</span>}
+          </div>
           <div style={{ minWidth: 1050, display: "grid", gridTemplateColumns: "100px minmax(150px,1.8fr) 90px 55px 70px 70px 70px 80px 100px", padding: "0 16px", borderBottom: `1px solid ${T.border}`, background: T.surfaceAlt, gap: 4 }}>
             <SortHeader col="contrato" label="ID Contrato" />
             <SortHeader col="nombre" label="Empresa" />
@@ -1224,7 +1436,7 @@ function QuantoSection() {
             return (
               <div key={o.contrato} style={{ minWidth: 1050, display: "grid", gridTemplateColumns: "100px minmax(150px,1.8fr) 90px 55px 70px 70px 70px 80px 100px", padding: "12px 16px", borderBottom: i < sortedOps.length - 1 ? `1px solid ${T.borderLight}` : "none", gap: 4, fontSize: 11, alignItems: "center", animation: `fadeUp .3s ease ${i*.05}s both` }}>
                 <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, fontWeight: 600, color: T.navy }}>{o.contrato}</span>
-                <span style={{ fontSize: 11, fontWeight: 600, color: T.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{o.nombre.length > 35 ? o.nombre.slice(0,33)+"…" : o.nombre}</span>
+                <span onClick={() => { const cl = CLIENTS.find(cl => o.nombre.toUpperCase().includes(cl.razonSocial.split(" SA")[0])); if (cl && onSelectClient) onSelectClient(cl.id); }} style={{ fontSize: 11, fontWeight: 600, color: T.blue, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: "pointer", textDecoration: "underline", textDecorationColor: "transparent", transition: "text-decoration-color .2s" }} onMouseEnter={e => e.target.style.textDecorationColor = T.blue} onMouseLeave={e => e.target.style.textDecorationColor = "transparent"}>{o.nombre.length > 35 ? o.nombre.slice(0,33)+"…" : o.nombre}</span>
                 <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, fontWeight: 700, color: T.text }}>{fmt(o.rentasFijas)}</span>
                 <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: T.textSecondary }}>{o.plazo}m</span>
                 <MoraCell value={o.d30} />
@@ -1485,6 +1697,7 @@ function MiniBar({ data, height = 100, color = T.blue }) {
 function TabResumen({ c }) {
   const sc = scoreColor(c.calificacion.score);
   const progreso = c.pagosRealizados / (c.pagosRealizados + c.pagosRestantes);
+  const [observaciones, setObservaciones] = useState(c.observaciones || "");
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       {/* Hero strip */}
@@ -1552,6 +1765,33 @@ function TabResumen({ c }) {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Observaciones */}
+      <div style={{ ...card, padding: "18px 20px" }}>
+        <div style={{ fontSize: 10, fontWeight: 600, color: T.textTertiary, textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>Observaciones</div>
+        <textarea
+          value={observaciones}
+          onChange={e => setObservaciones(e.target.value)}
+          placeholder="Escribe observaciones sobre este cliente..."
+          rows={4}
+          style={{
+            width: "100%",
+            padding: "10px 12px",
+            fontSize: 13,
+            fontFamily: "inherit",
+            color: T.text,
+            background: T.surfaceAlt,
+            border: `1px solid ${T.border}`,
+            borderRadius: 8,
+            resize: "vertical",
+            outline: "none",
+            boxSizing: "border-box",
+            lineHeight: 1.5,
+          }}
+          onFocus={e => e.target.style.borderColor = T.blue}
+          onBlur={e => e.target.style.borderColor = T.border}
+        />
       </div>
     </div>
   );
@@ -1701,8 +1941,9 @@ function TabPasivos({ c }) {
                 <span style={{ width: 90, fontSize: 11, fontWeight: 600, color: T.textSecondary, textAlign: "right", flexShrink: 0 }}>{d.institucion}</span>
                 <div style={{ flex: 1, height: 24, background: T.surfaceAlt, borderRadius: 4, overflow: "hidden", position: "relative" }}>
                   <div style={{ height: "100%", width: `${pct}%`, background: d.color, borderRadius: 4, opacity: .75 }} />
-                  <span style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", fontSize: 10, fontWeight: 700, color: T.textSecondary }}>{fmtShort(d.saldo)}</span>
                 </div>
+                <span style={{ width: 50, fontSize: 11, fontWeight: 700, color: T.text, textAlign: "right", flexShrink: 0, fontFamily: "'JetBrains Mono', monospace" }}>{pct.toFixed(1)}%</span>
+                <span style={{ width: 60, fontSize: 11, fontWeight: 600, color: T.textSecondary, textAlign: "right", flexShrink: 0 }}>{fmtShort(d.saldo)}</span>
               </div>
             );
           })}
