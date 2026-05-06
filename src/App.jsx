@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 
 // ═══════════════════════════════════════════════
 // THEME
@@ -631,23 +631,111 @@ const REMINDERS_INIT = [
 // ═══════════════════════════════════════════════
 const fmt = (n) => new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
 const fmtUSD = (n) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
-const fmtShort = (n) => { if (n >= 1e9) return `$${(n / 1e9).toFixed(1)}B`; if (n >= 1e6) return `$${(n / 1e6).toFixed(0)}M`; if (n >= 1e3) return `$${(n / 1e3).toFixed(0)}K`; return `$${n}`; };
+const fmtShort = (n) => {
+  const abs = Math.abs(n); const sign = n < 0 ? "-" : "";
+  if (abs >= 1e9) return `${sign}$${(abs / 1e9).toFixed(2)}B`;
+  if (abs >= 1e8) return `${sign}$${(abs / 1e6).toFixed(0)}M`;
+  if (abs >= 1e6) return `${sign}$${(abs / 1e6).toFixed(1)}M`;
+  if (abs >= 1e3) return `${sign}$${(abs / 1e3).toFixed(0)}K`;
+  return `${sign}$${abs}`;
+};
 const scoreColor = (s, max = 1000) => { const p = s / max; return p >= 0.75 ? T.green : p >= 0.5 ? T.amber : T.red; };
 const scoreBg = (s, max = 1000) => { const p = s / max; return p >= 0.75 ? T.greenLight : p >= 0.5 ? T.amberLight : T.redLight; };
+
+// ═══════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════
+const NAV_SECTIONS = [
+  {
+    id: "direccion",
+    label: "Dirección General",
+    icon: "dashboard",
+    items: [
+      { id: "kpis-corp", label: "KPI's Corporativos" },
+      { id: "dashboard-financiero", label: "Dashboard Financiero" },
+    ],
+  },
+  {
+    id: "comercial",
+    label: "Comercial",
+    icon: "groups",
+    items: [
+      { id: "clientes", label: "Clientes Activos" },
+    ],
+  },
+  {
+    id: "crm",
+    label: "CRM",
+    icon: "hub",
+    items: [
+      { id: "crm-pipeline", label: "Pipeline" },
+      { id: "crm-reportes", label: "Reportes" },
+      { id: "crm-bitacora", label: "Bitácora" },
+    ],
+  },
+  {
+    id: "finanzas",
+    label: "Finanzas",
+    icon: "account_balance",
+    items: [
+      { id: "fin-quanto", label: "Fin Quanto" },
+      { id: "working-capital", label: "Working Capital Operativo" },
+      { id: "recordatorios", label: "Recordatorios de Pago" },
+    ],
+  },
+  {
+    id: "operacion",
+    label: "Operación",
+    icon: "build",
+    items: [
+      { id: "op-general", label: "General" },
+      { id: "op-colocacion", label: "Colocación" },
+      { id: "op-seguros", label: "Seguros" },
+      { id: "op-facturacion", label: "Facturación / Proveedores" },
+      { id: "op-vencimientos", label: "Vencimientos" },
+    ],
+  },
+  {
+    id: "riesgos",
+    label: "Riesgos",
+    icon: "shield",
+    items: [
+      { id: "riesgos-panorama", label: "Panorama" },
+      { id: "riesgos-expedientes", label: "Expedientes" },
+      { id: "riesgos-analisis", label: "Análisis IA" },
+    ],
+  },
+];
 
 // ═══════════════════════════════════════════════
 // APP
 // ═══════════════════════════════════════════════
 export default function App() {
-  const [view, setView] = useState("home"); // home | detail
+  const [activeSection, setActiveSection] = useState("direccion");
+  const [activeItemBySection, setActiveItemBySection] = useState(() =>
+    Object.fromEntries(NAV_SECTIONS.map(s => [s.id, s.items[0].id]))
+  );
   const [clientId, setClientId] = useState(null);
+
+  // CRM — estado compartido entre Pipeline / Reportes / Bitácora
+  const [crmDeals, setCrmDeals] = useState(CRM_DEALS_INIT);
+  const [crmActivities, setCrmActivities] = useState(CRM_ACTIVITIES_INIT);
+  const addDeal = (d) => setCrmDeals(prev => [{ ...d, id: `d${Date.now()}` }, ...prev]);
+  const updateDeal = (id, patch) => setCrmDeals(prev => prev.map(d => d.id === id ? { ...d, ...patch } : d));
+  const addActivity = (a) => setCrmActivities(prev => [{ ...a, id: Date.now() }, ...prev]);
+
+  const section = NAV_SECTIONS.find(s => s.id === activeSection);
+  const activeItem = activeItemBySection[activeSection];
+  const itemMeta = section?.items.find(i => i.id === activeItem);
   const client = CLIENTS.find(c => c.id === clientId);
 
-  const openClient = (id) => { setClientId(id); setView("detail"); };
-  const goHome = () => { setView("home"); setClientId(null); };
+  const openClient = (id) => setClientId(id);
+  const closeClient = () => setClientId(null);
+  const navigateSection = (id) => { setClientId(null); setActiveSection(id); };
+  const navigateItem = (id) => { setClientId(null); setActiveItemBySection(prev => ({ ...prev, [activeSection]: id })); };
 
   return (
-    <div style={{ minHeight: "100vh", background: T.bg, color: T.text, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+    <div style={{ minHeight: "100vh", background: T.bg, color: T.text, fontFamily: "'Plus Jakarta Sans', sans-serif", display: "flex" }}>
       <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
       <style>{`
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -658,35 +746,138 @@ export default function App() {
         @keyframes fadeIn{from{opacity:0}to{opacity:1}}
         .hover-lift{transition:all .22s ease}.hover-lift:hover{transform:translateY(-2px);box-shadow:${T.shadowLg}}
         .hover-row{transition:background .15s ease}.hover-row:hover{background:${T.surfaceAlt}}
+        .nav-section:hover:not(.is-active){background:${T.surfaceAlt}}
       `}</style>
 
-      <Header showBack={view === "detail"} onBack={goHome} clientName={client?.nombre} />
-      {view === "home" && <HomeView onSelectClient={openClient} />}
-      {view === "detail" && client && <DetailView client={client} />}
+      <Sidebar activeSection={activeSection} onNavigate={navigateSection} />
+
+      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+        <Header
+          showBack={!!clientId}
+          onBack={closeClient}
+          title={clientId ? client?.nombre : section?.label}
+          subtitle={clientId ? "Expediente Ekatena" : "Sección"}
+        />
+
+        {clientId && client ? (
+          <DetailView client={client} />
+        ) : (
+          <main style={{ maxWidth: 1320, margin: "0 auto", padding: "24px 28px", width: "100%" }}>
+            {/* Pestañas internas de la sección */}
+            {section && section.items.length > 0 && (
+              <div style={{ display: "flex", gap: 4, marginBottom: 24, background: T.surfaceAlt, borderRadius: T.radius, padding: 4, width: "fit-content", flexWrap: "wrap" }}>
+                {section.items.map(it => {
+                  const active = it.id === activeItem;
+                  return (
+                    <button key={it.id} onClick={() => navigateItem(it.id)}
+                      style={{
+                        padding: "9px 18px", border: "none", borderRadius: T.radiusSm,
+                        background: active ? T.surface : "transparent",
+                        color: active ? T.navy : T.textTertiary,
+                        fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+                        boxShadow: active ? T.shadow : "none",
+                        display: "flex", alignItems: "center", gap: 8,
+                        transition: "all .2s",
+                      }}>
+                      <span>{it.label}</span>
+                      {it.placeholder && (
+                        <span style={{ fontSize: 8, color: T.amber, fontWeight: 800, padding: "2px 6px", borderRadius: 3, background: T.amberLight, textTransform: "uppercase", letterSpacing: 0.5 }}>WIP</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {activeItem === "kpis-corp" && <KpiCorporativosSection />}
+            {activeItem === "dashboard-financiero" && <DashboardFinancieroSection />}
+            {activeItem === "working-capital" && <WorkingCapitalSection />}
+            {activeItem === "clientes" && <ClientsSection onSelectClient={openClient} />}
+            {activeItem === "crm-pipeline" && <CrmPipelineSection deals={crmDeals} activities={crmActivities} onAddDeal={addDeal} onUpdateDeal={updateDeal} onAddActivity={addActivity} />}
+            {activeItem === "crm-reportes" && <CrmReportesSection deals={crmDeals} activities={crmActivities} />}
+            {activeItem === "crm-bitacora" && <CrmBitacoraSection deals={crmDeals} activities={crmActivities} onAddActivity={addActivity} />}
+            {activeItem === "fin-quanto" && <QuantoSection onSelectClient={openClient} />}
+            {activeItem === "recordatorios" && <RemindersSection />}
+            {activeItem === "op-general" && <OperacionGeneralSection onGoTab={navigateItem} />}
+            {activeItem === "op-colocacion" && <OperacionColocacionSection />}
+            {activeItem === "op-seguros" && <OperacionSegurosSection />}
+            {activeItem === "op-facturacion" && <OperacionFacturacionSection />}
+            {activeItem === "op-vencimientos" && <OperacionVencimientosSection />}
+            {activeItem === "riesgos-panorama" && <RiesgosPanoramaSection onSelectClient={openClient} />}
+            {activeItem === "riesgos-expedientes" && <RiesgosExpedientesSection onSelectClient={openClient} />}
+            {activeItem === "riesgos-analisis" && <RiesgosAnalisisSection />}
+            {itemMeta?.placeholder && <Placeholder title={itemMeta.label} section={section?.label} />}
+          </main>
+        )}
+      </div>
     </div>
+  );
+}
+
+// ═══════════════════════════════════════════════
+// SIDEBAR
+// ═══════════════════════════════════════════════
+function Sidebar({ activeSection, onNavigate }) {
+  return (
+    <aside style={{ width: 240, flexShrink: 0, background: T.surface, borderRight: `1px solid ${T.border}`, position: "sticky", top: 0, height: "100vh", overflowY: "auto", display: "flex", flexDirection: "column" }}>
+      {/* Brand */}
+      <div style={{ padding: "20px 22px", borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ width: 38, height: 38, borderRadius: 9, background: `linear-gradient(135deg, ${T.navy}, ${T.blue})`, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 13, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5 }}>IL</div>
+        <div style={{ lineHeight: 1.05 }}>
+          <div style={{ fontSize: 14, fontWeight: 800, color: T.navy, letterSpacing: 1.6 }}>IMAGINA</div>
+          <div style={{ fontSize: 8, letterSpacing: 3, color: T.textTertiary, fontWeight: 700, marginTop: 2 }}>LEASING · EKATENA</div>
+        </div>
+      </div>
+
+      {/* Section buttons */}
+      <nav style={{ flex: 1, padding: 12, display: "flex", flexDirection: "column", gap: 4 }}>
+        {NAV_SECTIONS.map(s => {
+          const active = activeSection === s.id;
+          return (
+            <button
+              key={s.id}
+              className={`nav-section${active ? " is-active" : ""}`}
+              onClick={() => onNavigate(s.id)}
+              style={{
+                textAlign: "left", border: "none", padding: "12px 14px", borderRadius: T.radiusSm,
+                background: active ? T.navy : "transparent",
+                color: active ? "#fff" : T.text,
+                fontSize: 13, fontWeight: active ? 700 : 600, cursor: "pointer", fontFamily: "inherit",
+                display: "flex", alignItems: "center", gap: 12,
+                transition: "all .18s",
+                boxShadow: active ? T.shadow : "none",
+              }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: 20, color: active ? "#fff" : T.textSecondary }}>{s.icon}</span>
+              <span style={{ flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.label}</span>
+            </button>
+          );
+        })}
+      </nav>
+
+      {/* Footer */}
+      <div style={{ padding: "14px 22px", borderTop: `1px solid ${T.border}`, fontSize: 10, color: T.textTertiary, fontWeight: 600, letterSpacing: 0.4 }}>
+        v1.0 · Dashboard Ekatena
+      </div>
+    </aside>
   );
 }
 
 // ═══════════════════════════════════════════════
 // HEADER
 // ═══════════════════════════════════════════════
-function Header({ showBack, onBack, clientName }) {
+function Header({ showBack, onBack, title, subtitle }) {
   return (
     <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 28px", borderBottom: `1px solid ${T.border}`, background: T.surface, position: "sticky", top: 0, zIndex: 50 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
         {showBack && (
           <button onClick={onBack} style={{ background: T.surfaceAlt, border: `1px solid ${T.border}`, borderRadius: T.radiusSm, color: T.textSecondary, padding: "6px 14px", cursor: "pointer", fontSize: 12, fontWeight: 600, fontFamily: "inherit" }}>
-            ← Clientes
+            ← Volver
           </button>
         )}
-        <div style={{ lineHeight: 1 }}>
-          <span style={{ fontSize: 16, fontWeight: 800, color: T.navy, letterSpacing: 2 }}>IMAGINA</span>
-          <span style={{ fontSize: 7, letterSpacing: 3.5, color: T.textTertiary, display: "block", fontWeight: 600 }}>LEASING</span>
-        </div>
-        <div style={{ width: 1, height: 24, background: T.border }} />
         <div>
-          <h1 style={{ fontSize: 14, fontWeight: 700, margin: 0, color: T.text }}>{showBack ? clientName : "Clientes Activos"}</h1>
-          <p style={{ fontSize: 10, color: T.textTertiary, margin: 0 }}>{showBack ? "Expediente Ekatena" : "Dashboard de Cartera"}</p>
+          <p style={{ fontSize: 10, color: T.textTertiary, margin: 0, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase" }}>{subtitle || ""}</p>
+          <h1 style={{ fontSize: 16, fontWeight: 800, margin: 0, color: T.navy }}>{title || "—"}</h1>
         </div>
       </div>
       <div style={{ fontSize: 11, color: T.textTertiary }}>
@@ -697,26 +888,20 @@ function Header({ showBack, onBack, clientName }) {
 }
 
 // ═══════════════════════════════════════════════
-// HOME VIEW
+// PLACEHOLDER (en desarrollo)
 // ═══════════════════════════════════════════════
-function HomeView({ onSelectClient }) {
-  const [tab, setTab] = useState("kpis");
+function Placeholder({ title, section }) {
   return (
-    <main style={{ maxWidth: 1320, margin: "0 auto", padding: "24px 28px" }}>
-      {/* Home Tabs */}
-      <div style={{ display: "flex", gap: 4, marginBottom: 24, background: T.surfaceAlt, borderRadius: T.radius, padding: 4, width: "fit-content" }}>
-        {[{ id: "kpis", label: "KPI's Corporativos" }, { id: "clientes", label: "Clientes Activos" }, { id: "quanto", label: "Financieros Quanto" }, { id: "recordatorios", label: "Recordatorios de Pago" }].map(t => (
-          <button key={t.id} onClick={() => setTab(t.id)} style={{ padding: "9px 20px", border: "none", borderRadius: T.radiusSm, background: tab === t.id ? T.surface : "transparent", color: tab === t.id ? T.navy : T.textTertiary, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", boxShadow: tab === t.id ? T.shadow : "none", transition: "all .2s" }}>
-            {t.label}
-          </button>
-        ))}
+    <div style={{ animation: "fadeUp .5s ease", padding: "60px 20px", textAlign: "center" }}>
+      <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 72, height: 72, borderRadius: 18, background: T.blueLight, color: T.blue, marginBottom: 18 }}>
+        <span className="material-symbols-outlined" style={{ fontSize: 38 }}>construction</span>
       </div>
-
-      {tab === "kpis" && <KpiCorporativosSection />}
-      {tab === "clientes" && <ClientsSection onSelectClient={onSelectClient} />}
-      {tab === "quanto" && <QuantoSection onSelectClient={onSelectClient} />}
-      {tab === "recordatorios" && <RemindersSection />}
-    </main>
+      <div style={{ fontSize: 10, color: T.textTertiary, fontWeight: 800, letterSpacing: 1.6, textTransform: "uppercase", marginBottom: 6 }}>{section}</div>
+      <h2 style={{ fontSize: 22, fontWeight: 800, color: T.navy, margin: 0 }}>{title}</h2>
+      <p style={{ fontSize: 13, color: T.textSecondary, marginTop: 10, maxWidth: 460, marginInline: "auto", lineHeight: 1.55 }}>
+        Esta sección está en desarrollo. Pronto la habilitaremos con el contenido y los flujos correspondientes.
+      </p>
+    </div>
   );
 }
 
@@ -1575,17 +1760,2855 @@ const lbl = { fontSize: 11, fontWeight: 600, color: T.textSecondary, display: "b
 const inp = { width: "100%", padding: "9px 12px", background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radiusSm, color: T.text, fontSize: 13, fontFamily: "'Plus Jakarta Sans', sans-serif", outline: "none" };
 
 // ═══════════════════════════════════════════════
+// CLIENT ↔ CONTRACTS MAPPING
+// ═══════════════════════════════════════════════
+const CLIENT_QUANTO_KEY = {
+  "abc-aluminum": "ALUMINIO DE BAJA CALIFORNIA",
+  "grupo-constructor": "GRUPO CONSTRUCTOR PACÍFICO",
+  "alimentos-norte": "ALIMENTOS DEL NORTE",
+  "logistica-express": "LOGÍSTICA EXPRESS DE MÉXICO",
+  "solar-energy": "SOLAR ENERGY BAJA CALIFORNIA",
+  "textiles-jalisco": "TEXTILES DE JALISCO",
+  "farmacia-vida": "DISTRIBUIDORA FARMACÉUTICA VIDA PLUS",
+  "minera-cobre": "MINERA COBRE DEL PACÍFICO",
+  "plasticos-reforma": "PLÁSTICOS REFORMA DEL SURESTE",
+  "agroindustrias-sur": "AGROINDUSTRIAS DEL SUR",
+  "tech-solutions": "TECH SOLUTIONS DE GUADALAJARA",
+};
+const contractsForClient = (c) => {
+  const key = CLIENT_QUANTO_KEY[c.id];
+  if (!key) return [];
+  return QUANTO_OPS.filter(op => op.nombre.includes(key));
+};
+
+// ═══════════════════════════════════════════════
+// OPERACIÓN — DATA
+// ═══════════════════════════════════════════════
+const ENTIDAD_BY_CLIENTE = {
+  "ALUMINIO DE BAJA CALIFORNIA": "Baja California",
+  "GRUPO CONSTRUCTOR PACÍFICO": "CDMX",
+  "ALIMENTOS DEL NORTE": "Nuevo León",
+  "LOGÍSTICA EXPRESS DE MÉXICO": "Estado de México",
+  "SOLAR ENERGY BAJA CALIFORNIA": "Baja California",
+  "TEXTILES DE JALISCO": "Jalisco",
+  "DISTRIBUIDORA FARMACÉUTICA VIDA PLUS": "Querétaro",
+  "MINERA COBRE DEL PACÍFICO": "Sonora",
+  "PLÁSTICOS REFORMA DEL SURESTE": "Tabasco",
+  "AGROINDUSTRIAS DEL SUR": "Chiapas",
+  "TECH SOLUTIONS DE GUADALAJARA": "Jalisco",
+};
+
+const PROVEEDORES_BY_BIEN = {
+  "MAQUINARIA Y EQUIPO INDUSTRIAL": [
+    { nombre: "SIEMENS MÉXICO S.A. DE C.V.", rfc: "SIE920731AB1", entidad: "CDMX" },
+    { nombre: "ABB MÉXICO S.A. DE C.V.", rfc: "ABB890215XY3", entidad: "Nuevo León" },
+    { nombre: "ROCKWELL AUTOMATION DE MÉXICO", rfc: "RAM870612MN4", entidad: "Jalisco" },
+  ],
+  "MAQUINARIA PESADA": [
+    { nombre: "CATERPILLAR MÉXICO S.A. DE C.V.", rfc: "CAT850412AC1", entidad: "Nuevo León" },
+    { nombre: "KOMATSU LATINOAMÉRICA S.A.", rfc: "KOM920518DH9", entidad: "CDMX" },
+  ],
+  "EQUIPO DE EMPAQUE": [
+    { nombre: "ISHIDA DE MÉXICO S.A. DE C.V.", rfc: "ISH910330KP2", entidad: "CDMX" },
+  ],
+  "TRACTOCAMIONES": [
+    { nombre: "KENWORTH MEXICANA S.A. DE C.V.", rfc: "KEN790115QP1", entidad: "Baja California" },
+    { nombre: "FREIGHTLINER DE MÉXICO", rfc: "FRE850920TX5", entidad: "Coahuila" },
+  ],
+  "CAJAS SECAS Y REFRIGERADAS": [
+    { nombre: "THERMO KING DE MÉXICO", rfc: "TKM900403VR8", entidad: "Nuevo León" },
+  ],
+  "PANELES SOLARES INDUSTRIALES": [
+    { nombre: "JINKO SOLAR MÉXICO", rfc: "JKS131120LL7", entidad: "CDMX" },
+  ],
+  "INVERSORES Y EQUIPOS ELÉCTRICOS": [
+    { nombre: "SCHNEIDER ELECTRIC MÉXICO", rfc: "SEM880714GG2", entidad: "Estado de México" },
+  ],
+  "TELARES INDUSTRIALES": [
+    { nombre: "PICANOL DE MÉXICO", rfc: "PIM050811BB4", entidad: "Jalisco" },
+  ],
+  "EQUIPO DE CADENA DE FRÍO": [
+    { nombre: "CARRIER MÉXICO S.A. DE C.V.", rfc: "CAM800219EE1", entidad: "Querétaro" },
+  ],
+  "MAQUINARIA DE EXTRACCIÓN MINERA": [
+    { nombre: "SANDVIK MINING DE MÉXICO", rfc: "SAN940510MM3", entidad: "Sonora" },
+  ],
+  "EQUIPO DE TRITURACIÓN": [
+    { nombre: "METSO OUTOTEC MÉXICO", rfc: "MOM110425OO9", entidad: "Sonora" },
+  ],
+  "INYECTORAS DE PLÁSTICO": [
+    { nombre: "ENGEL MAQUINARIA S.A.", rfc: "ENG020308PP6", entidad: "Querétaro" },
+  ],
+  "PLANTA PROCESADORA DE GRANOS": [
+    { nombre: "BÜHLER DE MÉXICO", rfc: "BUH960712BB8", entidad: "Estado de México" },
+  ],
+  "SILOS DE ALMACENAMIENTO": [
+    { nombre: "AGI INTERNATIONAL S.A.", rfc: "AGI990605II7", entidad: "Sinaloa" },
+  ],
+  "SERVIDORES Y EQUIPO DE DATA CENTER": [
+    { nombre: "DELL TECHNOLOGIES MÉXICO", rfc: "DEL850922DD2", entidad: "CDMX" },
+  ],
+  "UPS Y CLIMATIZACIÓN": [
+    { nombre: "APC SCHNEIDER ELECTRIC", rfc: "APC910707AA5", entidad: "Estado de México" },
+  ],
+};
+
+const ASEGURADORAS = ["AXA Seguros", "GNP Seguros", "Mapfre Tepeyac", "Quálitas", "Chubb Seguros", "Zurich Santander"];
+const TIPOS_OPERACION = ["Nuevo", "Sale & Lease Back", "Reestructura"];
+
+const _today = new Date("2026-05-06");
+const _addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+const _iso = (d) => d.toISOString().slice(0, 10);
+
+const ASSETS_REPORT = QUANTO_OPS.map((op, i) => {
+  const proveedoresList = PROVEEDORES_BY_BIEN[op.bien] || [{ nombre: "PROVEEDOR GENERAL S.A.", rfc: "PGE010101AAA", entidad: "CDMX" }];
+  const proveedor = proveedoresList[i % proveedoresList.length];
+  const aseguradora = ASEGURADORAS[i % ASEGURADORAS.length];
+  const tipoOperacion = TIPOS_OPERACION[i % 3];
+
+  const fechaDesembolso = new Date(op.fechaDesembolso);
+  const fechaFact = _addDays(fechaDesembolso, -(15 + (i % 25)));
+  const tiempoPagoDias = 20 + (i % 50);
+  const fechaPago = _addDays(fechaFact, tiempoPagoDias);
+  const fechaComp = _addDays(fechaPago, 2 + (i % 4));
+
+  // Spread póliza expirations across next 12 months for variety in semáforo
+  const polizaOffset = [-30, 12, 25, 55, 85, 120, 180, 240, 300, 350][i % 10];
+  const fechaVencPoliza = _addDays(_today, polizaOffset);
+
+  // ~20% de los contratos están "terminados" (vendidos)
+  const terminado = i % 5 === 1;
+  const fechaTerminoVenta = terminado ? _addDays(new Date(op.fechaVencimiento), -((i * 17) % 90 + 30)) : null;
+
+  const clienteKey = Object.keys(ENTIDAD_BY_CLIENTE).find(k => op.nombre.includes(k));
+  const entidadFederativa = ENTIDAD_BY_CLIENTE[clienteKey] || "CDMX";
+
+  const estatus = polizaOffset < 0 ? "Vencida" : "Vigente";
+  const valorFactura = +(op.valorBienSinIVA * 1.16).toFixed(2);
+  const valorAccesorios = Math.round(op.valorBienSinIVA * 0.02);
+
+  return {
+    id: i + 1,
+    contratoAnexo: op.contrato,
+    acreditada: op.nombre,
+    acreditadaCorta: op.nombre.split(",")[0],
+    tipoActivo: op.bien,
+    tipoOperacion,
+    descripcionActivo: `${op.bien} · ${proveedor.nombre.split(" ")[0]} ${1000 + i}`,
+    numeroSerie: `SN-${2025 + (i % 2)}-${String(op.idArr || (1000 + i)).padStart(5, "0")}`,
+    proveedor: proveedor.nombre,
+    rfcProveedor: proveedor.rfc,
+    entidadProveedor: proveedor.entidad,
+    fechaFacturacion: _iso(fechaFact),
+    factura: `F-${2025 + (i % 2)}-${1000 + i}`,
+    folioFiscal: `${["A1B2C3D4", "E5F6G7H8", "I9J0K1L2", "M3N4O5P6", "Q7R8S9T0"][i % 5]}-${i.toString(16).toUpperCase()}`,
+    valorFactura,
+    moneda: "MXN",
+    valorAccesorios,
+    fechaPago: _iso(fechaPago),
+    tiempoPagoDias,
+    fechaComplementoPago: _iso(fechaComp),
+    folioFiscalComplemento: `CMP-${i.toString(16).toUpperCase()}-${1000 + i}`,
+    estatus,
+    numeroPoliza: `POL-${aseguradora.split(" ")[0].toUpperCase().slice(0,4)}-${2025}-${String(i + 1).padStart(4, "0")}`,
+    fechaVencimientoPoliza: _iso(fechaVencPoliza),
+    aseguradora,
+    vencimiento: op.fechaVencimiento,
+    fechaTerminoVenta: fechaTerminoVenta ? _iso(fechaTerminoVenta) : null,
+    receptorTermino: fechaTerminoVenta ? `Recolocación ${1000 + i}` : null,
+    fechaDesembolso: op.fechaDesembolso,
+    fecha1erPago: op.fecha1erPago,
+    pagoInicial: op.pagoInicial,
+    valorBienSinIVA: op.valorBienSinIVA,
+    plazo: op.plazo,
+    montoFinanciado: op.montoFinanciado,
+    rentaMensual: op.rentasFijas,
+    tasa: op.tasa,
+    entidadFederativa,
+  };
+});
+
+// ═══════════════════════════════════════════════
+// OPERACIÓN — HELPERS
+// ═══════════════════════════════════════════════
+const daysFromToday = (dateStr) => {
+  const d = new Date(dateStr);
+  return Math.round((d - _today) / 86400000);
+};
+
+const polizaSemaforo = (days) => {
+  if (days < 0) return { color: T.red, bg: T.redLight, label: "VENCIDA" };
+  if (days <= 30) return { color: "#EA580C", bg: "#FFEDD5", label: "CRÍTICA" };
+  if (days <= 90) return { color: T.amber, bg: T.amberLight, label: "PRÓXIMA" };
+  return { color: T.green, bg: T.greenLight, label: "VIGENTE" };
+};
+
+// ═══════════════════════════════════════════════
+// OPERACIÓN — UI PRIMITIVES
+// ═══════════════════════════════════════════════
+const opCard = { background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: 18, boxShadow: T.shadow };
+
+function OpKpi({ label, value, sub, accent = T.navy, icon }) {
+  return (
+    <div style={opCard}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+        {icon && <span className="material-symbols-outlined" style={{ fontSize: 16, color: accent }}>{icon}</span>}
+        <span style={{ fontSize: 9, fontWeight: 800, color: T.textTertiary, textTransform: "uppercase", letterSpacing: 1.2 }}>{label}</span>
+      </div>
+      <div style={{ fontSize: 22, fontWeight: 900, color: accent, fontFamily: "'JetBrains Mono', monospace", lineHeight: 1.1 }}>{value}</div>
+      {sub && <div style={{ fontSize: 11, color: T.textTertiary, marginTop: 4 }}>{sub}</div>}
+    </div>
+  );
+}
+
+function HBars({ entries, palette, formatter = fmtShort }) {
+  const max = Math.max(...entries.map(e => e.value), 1);
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      {entries.map((e, i) => {
+        const pct = (e.value / max) * 100;
+        const color = palette[i % palette.length];
+        return (
+          <div key={e.label}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4, fontSize: 11 }}>
+              <span style={{ fontWeight: 600, color: T.text }}>{e.label}</span>
+              <span style={{ fontWeight: 700, color: T.navy, fontFamily: "'JetBrains Mono', monospace" }}>{formatter(e.value)}</span>
+            </div>
+            <div style={{ height: 8, borderRadius: 4, background: T.surfaceAlt, overflow: "hidden" }}>
+              <div style={{ height: "100%", width: `${pct}%`, background: `linear-gradient(90deg, ${color}, ${color}BB)`, borderRadius: 4, transition: "width .8s ease" }} />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function PieChart({ entries, palette, size = 190 }) {
+  const total = entries.reduce((s, e) => s + e.value, 0) || 1;
+  let acc = 0;
+  const stops = entries.map((e, i) => {
+    const start = (acc / total) * 360;
+    acc += e.value;
+    const end = (acc / total) * 360;
+    return `${palette[i % palette.length]} ${start}deg ${end}deg`;
+  }).join(", ");
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 22, flexWrap: "wrap" }}>
+      <div style={{ width: size, height: size, borderRadius: "50%", background: `conic-gradient(${stops})`, position: "relative", flexShrink: 0 }}>
+        <div style={{ position: "absolute", inset: "22%", borderRadius: "50%", background: T.surface, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ fontSize: 9, color: T.textTertiary, fontWeight: 700, letterSpacing: 1 }}>TOTAL</div>
+          <div style={{ fontSize: 16, fontWeight: 800, color: T.navy, fontFamily: "'JetBrains Mono', monospace" }}>{entries.length}</div>
+        </div>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6, flex: 1, minWidth: 180 }}>
+        {entries.map((e, i) => {
+          const pct = ((e.value / total) * 100).toFixed(1);
+          return (
+            <div key={e.label} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
+              <span style={{ width: 10, height: 10, borderRadius: 2, background: palette[i % palette.length], flexShrink: 0 }} />
+              <span style={{ flex: 1, color: T.text, fontWeight: 600 }}>{e.label}</span>
+              <span style={{ color: T.navy, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace" }}>{pct}%</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function StackedBar({ entries, palette }) {
+  const total = entries.reduce((s, e) => s + e.value, 0) || 1;
+  return (
+    <div>
+      <div style={{ display: "flex", height: 22, borderRadius: 6, overflow: "hidden", border: `1px solid ${T.border}` }}>
+        {entries.map((e, i) => {
+          const pct = (e.value / total) * 100;
+          return <div key={e.label} title={`${e.label}: ${pct.toFixed(1)}%`} style={{ width: `${pct}%`, background: palette[i % palette.length] }} />;
+        })}
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 14, marginTop: 10 }}>
+        {entries.map((e, i) => {
+          const pct = ((e.value / total) * 100).toFixed(1);
+          return (
+            <div key={e.label} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11 }}>
+              <span style={{ width: 10, height: 10, borderRadius: 2, background: palette[i % palette.length] }} />
+              <span style={{ color: T.textSecondary }}>{e.label}</span>
+              <span style={{ color: T.navy, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace" }}>{pct}%</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function ScrollTable({ columns, rows, gridCols, minWidth = 1100, renderCell }) {
+  return (
+    <div style={{ ...opCard, padding: 0, position: "relative" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", padding: "6px 14px", borderBottom: `1px solid ${T.borderLight}`, background: T.surfaceAlt, fontSize: 9, fontWeight: 700, color: T.textTertiary, letterSpacing: 0.8, textTransform: "uppercase", gap: 6 }}>
+        <span className="material-symbols-outlined" style={{ fontSize: 12 }}>swipe</span>
+        Desliza horizontal para ver más columnas
+      </div>
+      <div className="scroll-x" style={{ overflowX: "scroll", overflowY: "hidden" }}>
+        <div style={{ minWidth, display: "grid", gridTemplateColumns: gridCols, padding: "12px 18px", borderBottom: `1px solid ${T.border}`, background: T.surfaceAlt, gap: 8 }}>
+          {columns.map(c => (
+            <span key={c.id} style={{ fontSize: 9, fontWeight: 800, color: T.textTertiary, textTransform: "uppercase", letterSpacing: 0.7 }}>{c.label}</span>
+          ))}
+        </div>
+        {rows.length === 0 && <div style={{ padding: 30, textAlign: "center", color: T.textTertiary, fontSize: 12 }}>Sin registros</div>}
+        {rows.map((r, i) => (
+          <div key={r.id ?? i} style={{ minWidth, display: "grid", gridTemplateColumns: gridCols, padding: "11px 18px", borderBottom: i < rows.length - 1 ? `1px solid ${T.borderLight}` : "none", gap: 8, alignItems: "center", fontSize: 11 }}>
+            {columns.map(c => <div key={c.id}>{renderCell(c, r)}</div>)}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════
+// OPERACIÓN — GENERAL
+// ═══════════════════════════════════════════════
+function OperacionGeneralSection({ onGoTab }) {
+  const totalActivos = ASSETS_REPORT.length;
+  const totalFacturado = ASSETS_REPORT.reduce((s, a) => s + a.valorFactura, 0);
+  const polizasVigentes = ASSETS_REPORT.filter(a => daysFromToday(a.fechaVencimientoPoliza) > 0).length;
+  const polizasPorVencer90 = ASSETS_REPORT.filter(a => { const d = daysFromToday(a.fechaVencimientoPoliza); return d >= 0 && d <= 90; }).length;
+  const polizasVencidas = ASSETS_REPORT.filter(a => daysFromToday(a.fechaVencimientoPoliza) < 0).length;
+  const proveedoresUnicos = new Set(ASSETS_REPORT.map(a => a.proveedor)).size;
+  const promDiasPago = Math.round(ASSETS_REPORT.reduce((s, a) => s + a.tiempoPagoDias, 0) / ASSETS_REPORT.length);
+  const terminados = ASSETS_REPORT.filter(a => a.fechaTerminoVenta).length;
+  const aseguradoraTop = Object.entries(ASSETS_REPORT.reduce((acc, a) => { acc[a.aseguradora] = (acc[a.aseguradora] || 0) + 1; return acc; }, {})).sort((a, b) => b[1] - a[1])[0];
+
+  const cards = [
+    { id: "op-colocacion", icon: "place", title: "Colocación", value: `${totalActivos} activos`, sub: `${fmtShort(totalFacturado)} facturados`, color: T.blue },
+    { id: "op-seguros", icon: "shield", title: "Seguros", value: `${polizasVigentes} vigentes`, sub: `${polizasPorVencer90} próximas · ${polizasVencidas} vencidas`, color: polizasVencidas > 0 ? T.red : T.green },
+    { id: "op-facturacion", icon: "receipt_long", title: "Facturación / Proveedores", value: `${proveedoresUnicos} proveedores`, sub: `${promDiasPago} días promedio de pago`, color: T.purple },
+    { id: "op-vencimientos", icon: "event_busy", title: "Vencimientos", value: `${terminados} terminados`, sub: `${totalActivos - terminados} arrendamientos activos`, color: T.amber },
+  ];
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 18, animation: "fadeUp .5s ease" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
+        <OpKpi icon="inventory_2" label="Activos administrados" value={totalActivos.toString()} accent={T.navy} />
+        <OpKpi icon="payments" label="Valor facturado total" value={fmtShort(totalFacturado)} accent={T.blue} />
+        <OpKpi icon="verified" label="Pólizas vigentes" value={`${polizasVigentes}/${totalActivos}`} accent={T.green} sub={polizasVencidas > 0 ? `${polizasVencidas} vencidas` : "Sin vencidas"} />
+        <OpKpi icon="schedule" label="Aseguradora líder" value={aseguradoraTop ? aseguradoraTop[0].split(" ")[0] : "—"} accent={T.purple} sub={aseguradoraTop ? `${aseguradoraTop[1]} pólizas` : ""} />
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 14 }}>
+        {cards.map(c => (
+          <button key={c.id} onClick={() => onGoTab && onGoTab(c.id)} className="hover-lift"
+            style={{ ...opCard, padding: 20, cursor: "pointer", textAlign: "left", border: `1px solid ${T.border}`, fontFamily: "inherit" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 9, background: `${c.color}14`, color: c.color, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <span className="material-symbols-outlined" style={{ fontSize: 20 }}>{c.icon}</span>
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 800, color: T.navy }}>{c.title}</div>
+            </div>
+            <div style={{ fontSize: 18, fontWeight: 900, color: c.color, fontFamily: "'JetBrains Mono', monospace" }}>{c.value}</div>
+            <div style={{ fontSize: 11, color: T.textSecondary, marginTop: 4 }}>{c.sub}</div>
+            <div style={{ fontSize: 10, fontWeight: 700, color: T.textTertiary, marginTop: 12, letterSpacing: 0.8, textTransform: "uppercase" }}>Abrir reporte →</div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════
+// OPERACIÓN — COLOCACIÓN
+// ═══════════════════════════════════════════════
+function OperacionColocacionSection() {
+  const yearTarget = 2026;
+  const data2026 = ASSETS_REPORT.filter(a => new Date(a.fechaDesembolso).getFullYear() === yearTarget);
+  const totalAnual = data2026.reduce((s, a) => s + a.valorFactura, 0);
+  const contratosActivos = data2026.length;
+  const clientesUnicos = new Set(data2026.map(a => a.acreditada)).size;
+  const totalRentas = data2026.reduce((s, a) => s + a.rentaMensual, 0);
+
+  const plazoCount = data2026.reduce((acc, a) => { acc[a.plazo] = (acc[a.plazo] || 0) + 1; return acc; }, {});
+  const plazoTop = Object.entries(plazoCount).sort((a, b) => b[1] - a[1])[0];
+
+  // Anual
+  const yearsAll = ASSETS_REPORT.reduce((acc, a) => { const y = new Date(a.fechaDesembolso).getFullYear(); acc[y] = (acc[y] || 0) + a.valorFactura; return acc; }, {});
+  const yearsEntries = Object.entries(yearsAll).sort().map(([y, v]) => ({ label: y, value: v }));
+
+  // Trimestral 2026
+  const triData = [1, 2, 3, 4].map(q => ({
+    label: `Q${q} ${yearTarget}`,
+    value: data2026.filter(a => Math.ceil((new Date(a.fechaDesembolso).getMonth() + 1) / 3) === q).reduce((s, a) => s + a.valorFactura, 0),
+  }));
+
+  // Por mes (anexos)
+  const meses = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+  const mesData = meses.map((m, idx) => ({
+    label: m,
+    value: data2026.filter(a => new Date(a.fechaDesembolso).getMonth() === idx).reduce((s, a) => s + a.valorFactura, 0),
+  }));
+
+  // Entidad federativa
+  const entidades = data2026.reduce((acc, a) => { acc[a.entidadFederativa] = (acc[a.entidadFederativa] || 0) + 1; return acc; }, {});
+  const entidadEntries = Object.entries(entidades).sort((a, b) => b[1] - a[1]).map(([k, v]) => ({ label: k, value: v }));
+
+  const palette = [T.blue, T.green, T.amber, T.purple, T.red, "#06B6D4", "#EC4899", T.navy, "#F59E0B", "#10B981"];
+
+  const columns = [
+    { id: "contrato", label: "Contrato" },
+    { id: "acreditada", label: "Acreditada" },
+    { id: "fechaDesembolso", label: "Desembolso" },
+    { id: "fecha1erPago", label: "1er Pago" },
+    { id: "vencimiento", label: "Vencimiento" },
+    { id: "valorBienSinIVA", label: "Valor s/IVA" },
+    { id: "valorFactura", label: "Valor Fact." },
+    { id: "plazo", label: "Plazo" },
+    { id: "rentaMensual", label: "Renta" },
+    { id: "entidad", label: "Entidad" },
+  ];
+
+  const renderCell = (c, r) => {
+    if (c.id === "contrato") return <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, fontWeight: 700, color: T.navy }}>{r.contratoAnexo}</span>;
+    if (c.id === "acreditada") return <span style={{ fontWeight: 600, color: T.text }}>{r.acreditadaCorta}</span>;
+    if (c.id === "fechaDesembolso") return <span style={{ color: T.textSecondary }}>{r.fechaDesembolso}</span>;
+    if (c.id === "fecha1erPago") return <span style={{ color: T.textSecondary }}>{r.fecha1erPago}</span>;
+    if (c.id === "vencimiento") return <span style={{ color: T.textSecondary }}>{r.vencimiento}</span>;
+    if (c.id === "valorBienSinIVA") return <span style={{ fontFamily: "'JetBrains Mono', monospace", color: T.textSecondary }}>{fmtShort(r.valorBienSinIVA)}</span>;
+    if (c.id === "valorFactura") return <span style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: T.navy }}>{fmtShort(r.valorFactura)}</span>;
+    if (c.id === "plazo") return <span>{r.plazo}m</span>;
+    if (c.id === "rentaMensual") return <span style={{ fontFamily: "'JetBrains Mono', monospace", color: T.textSecondary }}>{fmtShort(r.rentaMensual)}</span>;
+    if (c.id === "entidad") return <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, background: T.blueLight, color: T.blue, fontWeight: 700 }}>{r.entidadFederativa}</span>;
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 18, animation: "fadeUp .5s ease" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
+        <OpKpi icon="paid" label={`Monto total ${yearTarget}`} value={fmtShort(totalAnual)} accent={T.blue} />
+        <OpKpi icon="description" label="Contratos activos" value={contratosActivos.toString()} accent={T.navy} />
+        <OpKpi icon="groups" label="Clientes únicos" value={clientesUnicos.toString()} accent={T.green} />
+        <OpKpi icon="schedule" label="Plazo dominante" value={plazoTop ? `${plazoTop[0]} meses` : "—"} sub={plazoTop ? `${plazoTop[1]} contratos` : ""} accent={T.purple} />
+        <OpKpi icon="payments" label="Rentas mensuales" value={fmtShort(totalRentas)} accent={T.amber} />
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 14 }}>
+        <div style={opCard}>
+          <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: "0 0 14px" }}>Colocación anual</h3>
+          <HBars entries={yearsEntries} palette={palette} />
+        </div>
+        <div style={opCard}>
+          <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: "0 0 14px" }}>Colocación trimestral · {yearTarget}</h3>
+          <HBars entries={triData} palette={palette} />
+        </div>
+        <div style={opCard}>
+          <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: "0 0 14px" }}>Valor facturado por mes · {yearTarget}</h3>
+          <HBars entries={mesData} palette={palette} />
+        </div>
+        <div style={opCard}>
+          <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: "0 0 14px" }}>Presencia por entidad federativa</h3>
+          <PieChart entries={entidadEntries} palette={palette} />
+        </div>
+      </div>
+
+      <div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+          <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: 0 }}>Reporte de colocación · drive</h3>
+          <span style={{ fontSize: 11, color: T.textTertiary }}>{ASSETS_REPORT.length} registros</span>
+        </div>
+        <ScrollTable
+          columns={columns}
+          rows={ASSETS_REPORT}
+          gridCols="120px minmax(140px,1.6fr) 90px 90px 90px 90px 100px 60px 90px minmax(110px,1fr)"
+          minWidth={1180}
+          renderCell={renderCell}
+        />
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════
+// OPERACIÓN — SEGUROS
+// ═══════════════════════════════════════════════
+function OperacionSegurosSection() {
+  const total = ASSETS_REPORT.length;
+  const polizasVencidas = ASSETS_REPORT.filter(a => daysFromToday(a.fechaVencimientoPoliza) < 0).length;
+  const polizas30 = ASSETS_REPORT.filter(a => { const d = daysFromToday(a.fechaVencimientoPoliza); return d >= 0 && d <= 30; }).length;
+  const polizas90 = ASSETS_REPORT.filter(a => { const d = daysFromToday(a.fechaVencimientoPoliza); return d > 30 && d <= 90; }).length;
+  const polizasVigentes = total - polizasVencidas - polizas30 - polizas90;
+
+  // Concentración por aseguradora (count + valor)
+  const porAseg = ASSETS_REPORT.reduce((acc, a) => {
+    if (!acc[a.aseguradora]) acc[a.aseguradora] = { count: 0, valor: 0 };
+    acc[a.aseguradora].count += 1;
+    acc[a.aseguradora].valor += a.valorFactura;
+    return acc;
+  }, {});
+  const asegEntries = Object.entries(porAseg).map(([k, v]) => ({ label: k, value: v.count })).sort((a, b) => b.value - a.value);
+
+  // Concentración aseguradora x tipo de activo (top match)
+  const porAsegTipo = {};
+  ASSETS_REPORT.forEach(a => {
+    porAsegTipo[a.aseguradora] = porAsegTipo[a.aseguradora] || {};
+    porAsegTipo[a.aseguradora][a.tipoActivo] = (porAsegTipo[a.aseguradora][a.tipoActivo] || 0) + 1;
+  });
+
+  const palette = [T.blue, T.green, T.amber, T.purple, T.red, "#06B6D4", "#EC4899", T.navy];
+
+  const columns = [
+    { id: "estatus", label: "Estatus" },
+    { id: "acreditada", label: "Acreditada" },
+    { id: "contrato", label: "Contrato" },
+    { id: "tipoActivo", label: "Tipo Activo" },
+    { id: "descripcion", label: "Descripción" },
+    { id: "serie", label: "N° Serie" },
+    { id: "poliza", label: "N° Póliza" },
+    { id: "venc", label: "Venc. Póliza" },
+    { id: "aseguradora", label: "Aseguradora" },
+  ];
+
+  const renderCell = (c, r) => {
+    const days = daysFromToday(r.fechaVencimientoPoliza);
+    const sem = polizaSemaforo(days);
+    if (c.id === "estatus") return <span style={{ fontSize: 9, fontWeight: 800, padding: "3px 8px", borderRadius: 4, background: sem.bg, color: sem.color, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5 }}>{sem.label}</span>;
+    if (c.id === "acreditada") return <span style={{ fontWeight: 600, color: T.text }}>{r.acreditadaCorta}</span>;
+    if (c.id === "contrato") return <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: T.navy, fontWeight: 700 }}>{r.contratoAnexo}</span>;
+    if (c.id === "tipoActivo") return <span style={{ color: T.textSecondary, fontSize: 10 }}>{r.tipoActivo.length > 26 ? r.tipoActivo.slice(0, 24) + "…" : r.tipoActivo}</span>;
+    if (c.id === "descripcion") return <span style={{ color: T.textSecondary, fontSize: 10 }}>{r.descripcionActivo.length > 32 ? r.descripcionActivo.slice(0, 30) + "…" : r.descripcionActivo}</span>;
+    if (c.id === "serie") return <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: T.textTertiary }}>{r.numeroSerie}</span>;
+    if (c.id === "poliza") return <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: T.text }}>{r.numeroPoliza}</span>;
+    if (c.id === "venc") return (
+      <span style={{ display: "flex", flexDirection: "column" }}>
+        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: sem.color, fontWeight: 700 }}>{r.fechaVencimientoPoliza}</span>
+        <span style={{ fontSize: 9, color: T.textTertiary }}>{days < 0 ? `${Math.abs(days)}d vencida` : `en ${days}d`}</span>
+      </span>
+    );
+    if (c.id === "aseguradora") return <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, background: T.surfaceAlt, color: T.text, fontWeight: 600 }}>{r.aseguradora}</span>;
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 18, animation: "fadeUp .5s ease" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
+        <OpKpi icon="shield" label="Pólizas activas" value={`${total - polizasVencidas}`} sub={`${total} totales`} accent={T.green} />
+        <OpKpi icon="warning" label="Vencidas" value={polizasVencidas.toString()} accent={T.red} />
+        <OpKpi icon="schedule" label="Críticas (≤30 días)" value={polizas30.toString()} accent="#EA580C" />
+        <OpKpi icon="event_upcoming" label="Próximas (31–90 días)" value={polizas90.toString()} accent={T.amber} />
+        <OpKpi icon="verified" label="Vigentes (>90 días)" value={polizasVigentes.toString()} accent={T.green} />
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 14 }}>
+        <div style={opCard}>
+          <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: "0 0 14px" }}>Concentración por aseguradora</h3>
+          <HBars entries={asegEntries} palette={palette} formatter={n => `${n} pólizas`} />
+        </div>
+        <div style={opCard}>
+          <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: "0 0 14px" }}>Aseguradora × tipo de activo</h3>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12, maxHeight: 320, overflowY: "auto" }}>
+            {Object.entries(porAsegTipo).sort((a, b) => Object.values(b[1]).reduce((x,y)=>x+y,0) - Object.values(a[1]).reduce((x,y)=>x+y,0)).map(([aseg, tipos]) => {
+              const entries = Object.entries(tipos).map(([k, v]) => ({ label: k.length > 22 ? k.slice(0,20) + "…" : k, value: v })).sort((a,b) => b.value - a.value);
+              return (
+                <div key={aseg}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: T.navy, marginBottom: 6 }}>{aseg}</div>
+                  <StackedBar entries={entries} palette={palette} />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+          <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: 0 }}>Reporte de seguros · drive</h3>
+          <div style={{ display: "flex", gap: 10, fontSize: 10, color: T.textSecondary }}>
+            <span style={{ display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 8, height: 8, borderRadius: 2, background: T.green }} />Vigente</span>
+            <span style={{ display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 8, height: 8, borderRadius: 2, background: T.amber }} />Próxima</span>
+            <span style={{ display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 8, height: 8, borderRadius: 2, background: "#EA580C" }} />Crítica</span>
+            <span style={{ display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 8, height: 8, borderRadius: 2, background: T.red }} />Vencida</span>
+          </div>
+        </div>
+        <ScrollTable
+          columns={columns}
+          rows={[...ASSETS_REPORT].sort((a, b) => daysFromToday(a.fechaVencimientoPoliza) - daysFromToday(b.fechaVencimientoPoliza))}
+          gridCols="80px minmax(140px,1.4fr) 110px minmax(140px,1.2fr) minmax(160px,1.4fr) 110px 130px 130px minmax(110px,1fr)"
+          minWidth={1280}
+          renderCell={renderCell}
+        />
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════
+// OPERACIÓN — FACTURACIÓN / PROVEEDORES
+// ═══════════════════════════════════════════════
+function OperacionFacturacionSection() {
+  const total = ASSETS_REPORT.length;
+  const totalFacturado = ASSETS_REPORT.reduce((s, a) => s + a.valorFactura, 0);
+  const promDias = Math.round(ASSETS_REPORT.reduce((s, a) => s + a.tiempoPagoDias, 0) / total);
+  const proveedoresUnicos = new Set(ASSETS_REPORT.map(a => a.proveedor)).size;
+
+  const minDias = Math.min(...ASSETS_REPORT.map(a => a.tiempoPagoDias));
+  const maxDias = Math.max(...ASSETS_REPORT.map(a => a.tiempoPagoDias));
+
+  // Top proveedores por número de facturas
+  const porProv = ASSETS_REPORT.reduce((acc, a) => {
+    if (!acc[a.proveedor]) acc[a.proveedor] = { count: 0, valor: 0, diasSum: 0 };
+    acc[a.proveedor].count += 1;
+    acc[a.proveedor].valor += a.valorFactura;
+    acc[a.proveedor].diasSum += a.tiempoPagoDias;
+    return acc;
+  }, {});
+  const provEntries = Object.entries(porProv).map(([k, v]) => ({ label: k.length > 26 ? k.slice(0,24) + "…" : k, value: v.valor, raw: v })).sort((a, b) => b.value - a.value).slice(0, 8);
+
+  // Distribución días de pago en buckets
+  const buckets = [
+    { label: "0-15 días", min: 0, max: 15 },
+    { label: "16-30 días", min: 16, max: 30 },
+    { label: "31-45 días", min: 31, max: 45 },
+    { label: "46-60 días", min: 46, max: 60 },
+    { label: "60+ días", min: 61, max: Infinity },
+  ];
+  const bucketData = buckets.map(b => ({ label: b.label, value: ASSETS_REPORT.filter(a => a.tiempoPagoDias >= b.min && a.tiempoPagoDias <= b.max).length }));
+
+  const palette = [T.blue, T.green, T.amber, T.purple, T.red, "#06B6D4", "#EC4899", T.navy];
+
+  const columns = [
+    { id: "acreditada", label: "Acreditada" },
+    { id: "contrato", label: "Contrato" },
+    { id: "tipoActivo", label: "Tipo Activo" },
+    { id: "tipoOp", label: "Operación" },
+    { id: "proveedor", label: "Proveedor" },
+    { id: "rfc", label: "RFC" },
+    { id: "entidadProv", label: "Entidad Prov." },
+    { id: "fechaFact", label: "Fecha Factura" },
+    { id: "factura", label: "Factura" },
+    { id: "folio", label: "Folio Fiscal" },
+    { id: "valorFact", label: "Valor c/IVA" },
+    { id: "moneda", label: "Mon." },
+    { id: "accesorios", label: "Accesorios" },
+    { id: "fechaPago", label: "Fecha Pago" },
+    { id: "diasPago", label: "Días" },
+    { id: "fechaComp", label: "Comp. Pago" },
+  ];
+
+  const renderCell = (c, r) => {
+    if (c.id === "acreditada") return <span style={{ fontWeight: 600, color: T.text, fontSize: 10 }}>{r.acreditadaCorta}</span>;
+    if (c.id === "contrato") return <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: T.navy, fontWeight: 700 }}>{r.contratoAnexo}</span>;
+    if (c.id === "tipoActivo") return <span style={{ fontSize: 10, color: T.textSecondary }}>{r.tipoActivo.length > 22 ? r.tipoActivo.slice(0,20) + "…" : r.tipoActivo}</span>;
+    if (c.id === "tipoOp") {
+      const colorMap = { "Nuevo": T.green, "Sale & Lease Back": T.blue, "Reestructura": T.amber };
+      return <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 3, background: `${colorMap[r.tipoOperacion]}14`, color: colorMap[r.tipoOperacion], fontWeight: 700 }}>{r.tipoOperacion}</span>;
+    }
+    if (c.id === "proveedor") return <span style={{ fontSize: 10, color: T.text, fontWeight: 600 }}>{r.proveedor.length > 24 ? r.proveedor.slice(0,22) + "…" : r.proveedor}</span>;
+    if (c.id === "rfc") return <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: T.textTertiary }}>{r.rfcProveedor}</span>;
+    if (c.id === "entidadProv") return <span style={{ fontSize: 10, color: T.textSecondary }}>{r.entidadProveedor}</span>;
+    if (c.id === "fechaFact") return <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: T.textSecondary }}>{r.fechaFacturacion}</span>;
+    if (c.id === "factura") return <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: T.text }}>{r.factura}</span>;
+    if (c.id === "folio") return <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: T.textTertiary }}>{r.folioFiscal}</span>;
+    if (c.id === "valorFact") return <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 700, color: T.navy }}>{fmtShort(r.valorFactura)}</span>;
+    if (c.id === "moneda") return <span style={{ fontSize: 10, color: T.textSecondary }}>{r.moneda}</span>;
+    if (c.id === "accesorios") return <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: T.textSecondary }}>{fmtShort(r.valorAccesorios)}</span>;
+    if (c.id === "fechaPago") return <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: T.textSecondary }}>{r.fechaPago}</span>;
+    if (c.id === "diasPago") {
+      const color = r.tiempoPagoDias <= 30 ? T.green : r.tiempoPagoDias <= 60 ? T.amber : T.red;
+      return <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 3, background: `${color}14`, color, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace" }}>{r.tiempoPagoDias}d</span>;
+    }
+    if (c.id === "fechaComp") return <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: T.textTertiary }}>{r.fechaComplementoPago}</span>;
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 18, animation: "fadeUp .5s ease" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
+        <OpKpi icon="receipt_long" label="Facturas registradas" value={total.toString()} accent={T.navy} />
+        <OpKpi icon="paid" label="Total facturado" value={fmtShort(totalFacturado)} accent={T.blue} />
+        <OpKpi icon="schedule" label="Días promedio de pago" value={`${promDias} días`} sub={`Rango: ${minDias}–${maxDias}d`} accent={T.purple} />
+        <OpKpi icon="storefront" label="Proveedores únicos" value={proveedoresUnicos.toString()} accent={T.green} />
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 14 }}>
+        <div style={opCard}>
+          <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: "0 0 14px" }}>Top proveedores por valor facturado</h3>
+          <HBars entries={provEntries} palette={palette} />
+        </div>
+        <div style={opCard}>
+          <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: "0 0 14px" }}>Distribución días de pago</h3>
+          <HBars entries={bucketData} palette={palette} formatter={n => `${n} facturas`} />
+          <div style={{ marginTop: 14, padding: 12, background: T.blueLight, borderRadius: T.radiusSm, fontSize: 11, color: T.navy }}>
+            <strong>Promedio del portafolio: {promDias} días</strong> entre fecha de facturación y fecha de pago.
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+          <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: 0 }}>Reporte de facturación · drive</h3>
+          <span style={{ fontSize: 11, color: T.textTertiary }}>{total} registros</span>
+        </div>
+        <ScrollTable
+          columns={columns}
+          rows={ASSETS_REPORT}
+          gridCols="minmax(140px,1.3fr) 110px minmax(140px,1.2fr) 100px minmax(160px,1.4fr) 100px 100px 100px 100px 110px 90px 60px 80px 100px 60px 100px"
+          minWidth={1700}
+          renderCell={renderCell}
+        />
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════
+// OPERACIÓN — VENCIMIENTOS
+// ═══════════════════════════════════════════════
+function OperacionVencimientosSection() {
+  const total = ASSETS_REPORT.length;
+  const terminados = ASSETS_REPORT.filter(a => a.fechaTerminoVenta);
+  const activos = total - terminados.length;
+
+  const proximos90 = ASSETS_REPORT.filter(a => { const d = daysFromToday(a.vencimiento); return d >= 0 && d <= 90 && !a.fechaTerminoVenta; }).length;
+  const vencidos = ASSETS_REPORT.filter(a => { const d = daysFromToday(a.vencimiento); return d < 0 && !a.fechaTerminoVenta; }).length;
+
+  // % por tipo de operación
+  const porTipo = ASSETS_REPORT.reduce((acc, a) => { acc[a.tipoOperacion] = (acc[a.tipoOperacion] || 0) + 1; return acc; }, {});
+  const tipoEntries = Object.entries(porTipo).map(([k, v]) => ({ label: k, value: v }));
+
+  // Tiempo de venta = fechaTerminoVenta - vencimiento
+  const tiemposVenta = terminados.map(a => ({
+    ...a,
+    diasVenta: Math.round((new Date(a.fechaTerminoVenta) - new Date(a.vencimiento)) / 86400000),
+  }));
+  const promVenta = tiemposVenta.length > 0 ? Math.round(tiemposVenta.reduce((s, a) => s + a.diasVenta, 0) / tiemposVenta.length) : 0;
+
+  // Tiempo de venta por tipo de activo
+  const ventaPorTipo = {};
+  tiemposVenta.forEach(a => {
+    if (!ventaPorTipo[a.tipoActivo]) ventaPorTipo[a.tipoActivo] = { sum: 0, count: 0 };
+    ventaPorTipo[a.tipoActivo].sum += a.diasVenta;
+    ventaPorTipo[a.tipoActivo].count += 1;
+  });
+  const ventaTipoEntries = Object.entries(ventaPorTipo).map(([k, v]) => ({ label: k.length > 26 ? k.slice(0,24) + "…" : k, value: Math.round(v.sum / v.count), count: v.count })).sort((a, b) => b.value - a.value);
+
+  const palette = [T.green, T.blue, T.amber, T.purple, T.red, "#06B6D4", "#EC4899", T.navy];
+  const tipoOpPalette = { "Nuevo": T.green, "Sale & Lease Back": T.blue, "Reestructura": T.amber };
+
+  const columns = [
+    { id: "acreditada", label: "Acreditada" },
+    { id: "contrato", label: "Contrato" },
+    { id: "tipoActivo", label: "Tipo Activo" },
+    { id: "tipoOp", label: "Operación" },
+    { id: "factura", label: "Factura" },
+    { id: "folio", label: "Folio Fiscal" },
+    { id: "valor", label: "Valor c/IVA" },
+    { id: "vencimiento", label: "Vencimiento" },
+    { id: "termino", label: "Término (Venta)" },
+    { id: "diasVenta", label: "Días Venta" },
+    { id: "receptor", label: "Receptor" },
+  ];
+
+  const renderCell = (c, r) => {
+    const diasVenta = r.fechaTerminoVenta ? Math.round((new Date(r.fechaTerminoVenta) - new Date(r.vencimiento)) / 86400000) : null;
+    if (c.id === "acreditada") return <span style={{ fontWeight: 600, color: T.text, fontSize: 10 }}>{r.acreditadaCorta}</span>;
+    if (c.id === "contrato") return <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: T.navy, fontWeight: 700 }}>{r.contratoAnexo}</span>;
+    if (c.id === "tipoActivo") return <span style={{ fontSize: 10, color: T.textSecondary }}>{r.tipoActivo.length > 24 ? r.tipoActivo.slice(0,22) + "…" : r.tipoActivo}</span>;
+    if (c.id === "tipoOp") return <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 3, background: `${tipoOpPalette[r.tipoOperacion]}14`, color: tipoOpPalette[r.tipoOperacion], fontWeight: 700 }}>{r.tipoOperacion}</span>;
+    if (c.id === "factura") return <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: T.text }}>{r.factura}</span>;
+    if (c.id === "folio") return <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: T.textTertiary }}>{r.folioFiscal}</span>;
+    if (c.id === "valor") return <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 700, color: T.navy }}>{fmtShort(r.valorFactura)}</span>;
+    if (c.id === "vencimiento") return <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: T.textSecondary }}>{r.vencimiento}</span>;
+    if (c.id === "termino") return r.fechaTerminoVenta
+      ? <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: T.green, fontWeight: 700 }}>{r.fechaTerminoVenta}</span>
+      : <span style={{ fontSize: 10, color: T.textTertiary }}>— activo —</span>;
+    if (c.id === "diasVenta") {
+      if (diasVenta === null) return <span style={{ color: T.textTertiary, fontSize: 10 }}>—</span>;
+      const color = diasVenta < 0 ? T.green : diasVenta <= 60 ? T.amber : T.red;
+      return <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, fontWeight: 800, color, padding: "2px 6px", borderRadius: 3, background: `${color}14` }}>{diasVenta > 0 ? `+${diasVenta}d` : `${diasVenta}d`}</span>;
+    }
+    if (c.id === "receptor") return <span style={{ fontSize: 10, color: T.textSecondary }}>{r.receptorTermino || "—"}</span>;
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 18, animation: "fadeUp .5s ease" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
+        <OpKpi icon="event" label="Arrendamientos activos" value={activos.toString()} accent={T.blue} />
+        <OpKpi icon="check_circle" label="Terminados / Vendidos" value={terminados.length.toString()} sub={`${((terminados.length/total)*100).toFixed(1)}% del portafolio`} accent={T.green} />
+        <OpKpi icon="alarm" label="Próximos a vencer (≤90d)" value={proximos90.toString()} accent={T.amber} />
+        <OpKpi icon="warning" label="Vencidos sin recolocar" value={vencidos.toString()} accent={T.red} />
+        <OpKpi icon="schedule" label="Tiempo prom. de venta" value={`${promVenta}d`} sub="vs vencimiento contrato" accent={T.purple} />
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 14 }}>
+        <div style={opCard}>
+          <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: "0 0 14px" }}>Distribución por tipo de operación</h3>
+          <PieChart entries={tipoEntries} palette={[T.green, T.blue, T.amber]} />
+        </div>
+        <div style={opCard}>
+          <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: "0 0 4px" }}>Tiempo de venta por tipo de activo</h3>
+          <p style={{ fontSize: 11, color: T.textTertiary, margin: "0 0 14px" }}>Días entre vencimiento y recolocación · negativo = vendido antes de vencer</p>
+          {ventaTipoEntries.length === 0 ? (
+            <div style={{ padding: 20, textAlign: "center", color: T.textTertiary, fontSize: 12 }}>Aún no hay activos terminados</div>
+          ) : (
+            <HBars entries={ventaTipoEntries} palette={palette} formatter={n => `${n} días prom.`} />
+          )}
+        </div>
+      </div>
+
+      <div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+          <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: 0 }}>Reporte de vencimientos · drive</h3>
+          <span style={{ fontSize: 11, color: T.textTertiary }}>{total} registros</span>
+        </div>
+        <ScrollTable
+          columns={columns}
+          rows={[...ASSETS_REPORT].sort((a, b) => new Date(a.vencimiento) - new Date(b.vencimiento))}
+          gridCols="minmax(140px,1.3fr) 110px minmax(150px,1.3fr) 110px 100px 110px 100px 100px 110px 80px minmax(120px,1fr)"
+          minWidth={1380}
+          renderCell={renderCell}
+        />
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════
+// CRM — DATA
+// ═══════════════════════════════════════════════
+const CRM_EJECUTIVOS = ["Carlos Mendoza", "Ana Ríos", "Jorge Fuentes", "Laura Soto"];
+const CRM_ETAPAS = [
+  { id: "Prospección", color: T.blue, bg: T.blueLight },
+  { id: "Propuesta", color: T.purple, bg: T.purpleLight },
+  { id: "Negociación", color: T.amber, bg: T.amberLight },
+  { id: "Cierre", color: "#0E7490", bg: "#CFFAFE" },
+  { id: "Ganada", color: T.green, bg: T.greenLight },
+  { id: "Perdida", color: T.red, bg: T.redLight },
+  { id: "No calificó", color: "#6B7280", bg: "#F3F4F6" },
+];
+
+const CRM_DEALS_INIT = [
+  { id: "d01", empresa: "Transportes del Norte", rs: "TRANSPORTES DEL NORTE SA DE CV", rfc: "TNO150612AB1", sector: "Transporte y logística", ubicacion: "Nuevo León", web: "https://transnorte.com.mx", tipoPersona: "pm", canal: "broker", broker: "Capital Brokers SA", ejecutivo: "Carlos Mendoza", contacto: { nombre: "Roberto Garza", puesto: "Director Operaciones", tel: "+52 81 1234 5678", email: "rgarza@transnorte.com.mx" }, fechaAcercamiento: "2026-03-15", semaforo: "verde", etapa: "Negociación", activo: { tipo: "Volvo FH 540 (5 unid.)", cat: "Equipo de transporte", valor: 4500000, monto: 3600000, plazo: 48, arr: "Arrendamiento Puro", moneda: "MXN", enganche: "20%" }, ekatena: { fecha: "2026-03-22", viable: true }, contrato: { tasa: "TIIE+4.5%", renta: 95000, residual: "10%", tir: "18.5%" }, exp: { docsOk: 18, docsTotal: 26, riesgos: "2026-04-08", autorizado: null, cierre: null }, verde: false, perdida: null, ai: { score: 78, rec: "Cliente con alta probabilidad. Avanzar con propuesta agresiva en plazo y tasa para asegurar cierre antes de fin de mes." } },
+  { id: "d02", empresa: "Constructora Bajío Premium", rs: "CONSTRUCTORA BAJÍO PREMIUM SA DE CV", rfc: "CBP180214MN5", sector: "Construcción", ubicacion: "Guanajuato", web: "https://cbpremium.mx", tipoPersona: "pm", canal: "referido", broker: null, ejecutivo: "Ana Ríos", contacto: { nombre: "Mariana López", puesto: "Gerente Financiero", tel: "+52 477 220 1100", email: "mlopez@cbpremium.mx" }, fechaAcercamiento: "2026-03-22", semaforo: "verde", etapa: "Cierre", activo: { tipo: "CAT 320 GC + Retro 420F2", cat: "Maquinaria pesada", valor: 8900000, monto: 7120000, plazo: 60, arr: "Arrendamiento Financiero", moneda: "MXN", enganche: "20%" }, ekatena: { fecha: "2026-03-28", viable: true }, contrato: { tasa: "TIIE+3.8%", renta: 162000, residual: "8%", tir: "17.2%" }, exp: { docsOk: 24, docsTotal: 26, riesgos: "2026-04-05", autorizado: "2026-04-22", cierre: null }, verde: false, perdida: null, ai: { score: 91, rec: "Expediente sólido y autorización lista. Programar firma esta semana, riesgo de demora si se posterga >10 días." } },
+  { id: "d03", empresa: "Tech Solutions GDL", rs: "TECH SOLUTIONS DE GUADALAJARA SA DE CV", rfc: "TSG170418PQ4", sector: "Tecnología", ubicacion: "Jalisco", web: "https://techgdl.com", tipoPersona: "pm", canal: "interno", broker: null, ejecutivo: "Jorge Fuentes", contacto: { nombre: "Andrés Ruiz", puesto: "CTO", tel: "+52 33 3456 7890", email: "aruiz@techgdl.com" }, fechaAcercamiento: "2026-04-02", semaforo: "amarillo", etapa: "Propuesta", activo: { tipo: "Servidores HPE Gen11 + UPS", cat: "Tecnología / IT", valor: 3200000, monto: 2880000, plazo: 36, arr: "Arrendamiento Puro", moneda: "MXN", enganche: "10%" }, ekatena: { fecha: "2026-04-08", viable: true }, contrato: { tasa: "TIIE+5.2%", renta: 96000, residual: "5%", tir: "20.1%" }, exp: { docsOk: 8, docsTotal: 26, riesgos: null, autorizado: null, cierre: null }, verde: true, perdida: null, ai: { score: 64, rec: "Tecnología deprecia rápido — sugerir plazo 36m y enganche reforzado. Cliente comparando con 2 competidores." } },
+  { id: "d04", empresa: "AgroBajío Industrial", rs: "AGROINDUSTRIAS DEL BAJÍO SA DE CV", rfc: "ABI160910KP1", sector: "Agropecuario", ubicacion: "Guanajuato", web: "https://agrobajio.com", tipoPersona: "pm", canal: "alianza", broker: "Alianza Banco Local", ejecutivo: "Laura Soto", contacto: { nombre: "Pedro Hernández", puesto: "Director General", tel: "+52 461 555 7788", email: "phernandez@agrobajio.com" }, fechaAcercamiento: "2026-03-30", semaforo: "verde", etapa: "Negociación", activo: { tipo: "John Deere 8R + Cosechadora", cat: "Maquinaria pesada", valor: 12500000, monto: 10000000, plazo: 60, arr: "Arrendamiento Puro", moneda: "MXN", enganche: "20%" }, ekatena: { fecha: "2026-04-01", viable: true }, contrato: { tasa: "TIIE+4.0%", renta: 215000, residual: "12%", tir: "16.8%" }, exp: { docsOk: 14, docsTotal: 26, riesgos: "2026-04-12", autorizado: null, cierre: null }, verde: true, perdida: null, ai: { score: 82, rec: "Negocio estacional. Aprovechar ventana antes del ciclo agrícola. Buena reputación crediticia del aval." } },
+  { id: "d05", empresa: "Logística Express MX", rs: "LOGÍSTICA EXPRESS DE MÉXICO SA DE CV", rfc: "LEM140312BB9", sector: "Transporte y logística", ubicacion: "Estado de México", web: "https://logiexpressmx.com", tipoPersona: "pm", canal: "broker", broker: "Brokers Premier", ejecutivo: "Carlos Mendoza", contacto: { nombre: "Susana Martínez", puesto: "VP Operaciones", tel: "+52 55 8800 1122", email: "smartinez@logiexpressmx.com" }, fechaAcercamiento: "2026-04-10", semaforo: "verde", etapa: "Propuesta", activo: { tipo: "Cajas Refrigeradas Thermo King (10 unid.)", cat: "Equipo de transporte", valor: 6800000, monto: 5440000, plazo: 48, arr: "Arrendamiento Puro", moneda: "MXN", enganche: "20%" }, ekatena: { fecha: "2026-04-15", viable: true }, contrato: { tasa: "TIIE+4.2%", renta: 142000, residual: "10%", tir: "17.5%" }, exp: { docsOk: 11, docsTotal: 26, riesgos: null, autorizado: null, cierre: null }, verde: true, perdida: null, ai: { score: 73, rec: "Cliente recurrente del sector. Sólidas relaciones bancarias — tasa competitiva clave. Acelerar firma." } },
+  { id: "d06", empresa: "Manufactura Textil Querétaro", rs: "MANUFACTURA TEXTIL QUERÉTARO SA DE CV", rfc: "MTQ190501XX2", sector: "Manufactura", ubicacion: "Querétaro", web: "https://mtq.com.mx", tipoPersona: "pm", canal: "referido", broker: null, ejecutivo: "Ana Ríos", contacto: { nombre: "Carlos Ortega", puesto: "Director Industrial", tel: "+52 442 290 0011", email: "cortega@mtq.com.mx" }, fechaAcercamiento: "2026-04-12", semaforo: "amarillo", etapa: "Prospección", activo: { tipo: "Telar industrial Picanol OmniPlus", cat: "Equipo de manufactura", valor: 3800000, monto: 3040000, plazo: 48, arr: "Arrendamiento Puro", moneda: "MXN", enganche: "20%" }, ekatena: { fecha: null, viable: null }, contrato: null, exp: { docsOk: 3, docsTotal: 26, riesgos: null, autorizado: null, cierre: null }, verde: false, perdida: null, ai: { score: 52, rec: "Información financiera incompleta. Solicitar EEFF antes de cotizar. Cliente nuevo sin historial." } },
+  { id: "d07", empresa: "Solar Energy Sonora", rs: "SOLAR ENERGY SONORA SA DE CV", rfc: "SES210603AA3", sector: "Energía", ubicacion: "Sonora", web: "https://solarsonora.mx", tipoPersona: "pm", canal: "alianza", broker: "Alianza Verde", ejecutivo: "Jorge Fuentes", contacto: { nombre: "Diana Reyes", puesto: "Directora de Proyectos", tel: "+52 662 480 5566", email: "dreyes@solarsonora.mx" }, fechaAcercamiento: "2026-04-15", semaforo: "verde", etapa: "Negociación", activo: { tipo: "Paneles + Inversores 5MW", cat: "Energía / Generación", valor: 18500000, monto: 15725000, plazo: 60, arr: "Arrendamiento Puro", moneda: "USD", enganche: "15%" }, ekatena: { fecha: "2026-04-18", viable: true }, contrato: { tasa: "TIIE+3.5%", renta: 320000, residual: "10%", tir: "15.9%" }, exp: { docsOk: 16, docsTotal: 26, riesgos: "2026-04-25", autorizado: null, cierre: null }, verde: true, perdida: null, ai: { score: 86, rec: "Operación verde con bono BONO ESG. Aprovechar incentivos. Mercado secundario de paneles activo." } },
+  { id: "d08", empresa: "Distribuidora Pacífico", rs: "DISTRIBUIDORA PACÍFICO SA DE CV", rfc: "DIP080718JK6", sector: "Comercio", ubicacion: "Sinaloa", web: "https://distpacifico.com", tipoPersona: "pm", canal: "interno", broker: null, ejecutivo: "Laura Soto", contacto: { nombre: "Hugo Castillo", puesto: "Gerente General", tel: "+52 667 712 9988", email: "hcastillo@distpacifico.com" }, fechaAcercamiento: "2026-03-28", semaforo: "verde", etapa: "Cierre", activo: { tipo: "Camiones de reparto Hino (8 unid.)", cat: "Equipo de transporte", valor: 5200000, monto: 4160000, plazo: 48, arr: "Arrendamiento Financiero", moneda: "MXN", enganche: "20%" }, ekatena: { fecha: "2026-04-02", viable: true }, contrato: { tasa: "TIIE+4.3%", renta: 112000, residual: "8%", tir: "17.8%" }, exp: { docsOk: 25, docsTotal: 26, riesgos: "2026-04-08", autorizado: "2026-04-24", cierre: null }, verde: false, perdida: null, ai: { score: 94, rec: "Listo para cierre. Solo falta acta constitutiva certificada. Probabilidad muy alta." } },
+  { id: "d09", empresa: "Hospital San Vicente", rs: "HOSPITAL SAN VICENTE SC", rfc: "HSV050422FF1", sector: "Salud", ubicacion: "CDMX", web: "https://hsanvicente.mx", tipoPersona: "pm", canal: "referido", broker: null, ejecutivo: "Carlos Mendoza", contacto: { nombre: "Dra. Patricia Vega", puesto: "Directora Médica", tel: "+52 55 5530 8800", email: "pvega@hsanvicente.mx" }, fechaAcercamiento: "2026-04-08", semaforo: "amarillo", etapa: "Propuesta", activo: { tipo: "Resonador Magnético Siemens 3T", cat: "Equipo médico", valor: 14200000, monto: 11360000, plazo: 60, arr: "Arrendamiento Financiero", moneda: "USD", enganche: "20%" }, ekatena: { fecha: "2026-04-14", viable: true }, contrato: { tasa: "TIIE+4.8%", renta: 245000, residual: "5%", tir: "18.2%" }, exp: { docsOk: 9, docsTotal: 26, riesgos: null, autorizado: null, cierre: null }, verde: false, perdida: null, ai: { score: 67, rec: "Equipo especializado de bajo mercado secundario. Reforzar covenants de mantenimiento." } },
+  { id: "d10", empresa: "Inmobiliaria Polanco", rs: "INMOBILIARIA POLANCO SAPI DE CV", rfc: "IPO110205RE7", sector: "Servicios", ubicacion: "CDMX", web: "https://inmpolanco.com", tipoPersona: "pm", canal: "interno", broker: null, ejecutivo: "Ana Ríos", contacto: { nombre: "Eduardo Salinas", puesto: "CFO", tel: "+52 55 5280 3344", email: "esalinas@inmpolanco.com" }, fechaAcercamiento: "2026-04-18", semaforo: "amarillo", etapa: "Prospección", activo: { tipo: "Mantenimiento + Equipo HVAC", cat: "Inmueble productivo", valor: 2800000, monto: 2240000, plazo: 36, arr: "Arrendamiento Puro", moneda: "MXN", enganche: "20%" }, ekatena: { fecha: null, viable: null }, contrato: null, exp: { docsOk: 2, docsTotal: 26, riesgos: null, autorizado: null, cierre: null }, verde: true, perdida: null, ai: { score: 48, rec: "Etapa muy temprana. Confirmar capacidad de pago y sector secundario inmobiliario." } },
+  { id: "d11", empresa: "Minera Cobre Pacífico", rs: "MINERA COBRE DEL PACÍFICO SA DE CV", rfc: "MCP120815MM5", sector: "Construcción", ubicacion: "Sonora", web: "https://mcpacifico.com", tipoPersona: "pm", canal: "broker", broker: "Mining Capital", ejecutivo: "Jorge Fuentes", contacto: { nombre: "Roberto Sánchez", puesto: "Director Operaciones", tel: "+52 631 320 4400", email: "rsanchez@mcpacifico.com" }, fechaAcercamiento: "2026-02-10", semaforo: "verde", etapa: "Ganada", activo: { tipo: "Sandvik DD422i Jumbo + Trituradora", cat: "Maquinaria pesada", valor: 22000000, monto: 17600000, plazo: 60, arr: "Arrendamiento Puro", moneda: "USD", enganche: "20%" }, ekatena: { fecha: "2026-02-18", viable: true }, contrato: { tasa: "TIIE+3.2%", renta: 380000, residual: "12%", tir: "15.5%" }, exp: { docsOk: 26, docsTotal: 26, riesgos: "2026-02-25", autorizado: "2026-03-18", cierre: "2026-04-02" }, verde: false, perdida: null, ai: { score: 100, rec: "Operación cerrada exitosamente. Cliente ancla — explorar oportunidades de cross-sell." } },
+  { id: "d12", empresa: "ABC Aluminum", rs: "ALUMINIO DE BAJA CALIFORNIA SA DE CV", rfc: "ABC991012BF0", sector: "Manufactura", ubicacion: "Baja California", web: "https://abc-aluminum.com", tipoPersona: "pm", canal: "interno", broker: null, ejecutivo: "Laura Soto", contacto: { nombre: "Wadih Kuri Rendón", puesto: "Director General", tel: "+52 664 980 1144", email: "wkuri@abc-aluminum.com" }, fechaAcercamiento: "2026-01-20", semaforo: "verde", etapa: "Ganada", activo: { tipo: "Equipo de Subestación Eléctrica", cat: "Equipo de manufactura", valor: 40000000, monto: 32000000, plazo: 48, arr: "Sale & Lease Back", moneda: "USD", enganche: "0%" }, ekatena: { fecha: "2026-01-28", viable: true }, contrato: { tasa: "TIIE+5.5%", renta: 1095798, residual: "0%", tir: "26.3%" }, exp: { docsOk: 26, docsTotal: 26, riesgos: "2026-02-05", autorizado: "2026-02-28", cierre: "2026-03-15" }, verde: false, perdida: null, ai: { score: 100, rec: "Cliente activo recurrente. Mantener relación cercana con CFO." } },
+  { id: "d13", empresa: "Grupo Constructor Pacífico", rs: "GRUPO CONSTRUCTOR PACÍFICO SA DE CV", rfc: "GCP180523LA9", sector: "Construcción", ubicacion: "CDMX", web: "https://gcpacifico.com.mx", tipoPersona: "pm", canal: "referido", broker: null, ejecutivo: "Carlos Mendoza", contacto: { nombre: "Roberto Sánchez Mora", puesto: "Director General", tel: "+52 55 5350 7700", email: "rsanchez@gcpacifico.com.mx" }, fechaAcercamiento: "2026-01-15", semaforo: "verde", etapa: "Ganada", activo: { tipo: "Excavadora CAT 320 + Retro 420F2", cat: "Maquinaria pesada", valor: 28500000, monto: 25650000, plazo: 36, arr: "Arrendamiento Puro", moneda: "MXN", enganche: "10%" }, ekatena: { fecha: "2026-01-25", viable: true }, contrato: { tasa: "TIIE+3.9%", renta: 985420, residual: "1%", tir: "23.5%" }, exp: { docsOk: 26, docsTotal: 26, riesgos: "2026-02-02", autorizado: "2026-02-22", cierre: "2026-03-08" }, verde: false, perdida: null, ai: { score: 100, rec: "Cliente activo. Buena oportunidad de ampliar línea de crédito." } },
+  { id: "d14", empresa: "Plásticos del Sureste", rs: "PLÁSTICOS REFORMA DEL SURESTE SA DE CV", rfc: "PRS220317LL3", sector: "Manufactura", ubicacion: "Tabasco", web: "https://plasticossur.mx", tipoPersona: "pm", canal: "broker", broker: "Sur Capital", ejecutivo: "Ana Ríos", contacto: { nombre: "Felipe Mora", puesto: "Director", tel: "+52 993 350 2200", email: "fmora@plasticossur.mx" }, fechaAcercamiento: "2026-02-01", semaforo: "verde", etapa: "Ganada", activo: { tipo: "Inyectora Engel ENGEL 500T", cat: "Equipo de manufactura", valor: 4850000, monto: 4122500, plazo: 36, arr: "Arrendamiento Financiero", moneda: "MXN", enganche: "15%" }, ekatena: { fecha: "2026-02-08", viable: true }, contrato: { tasa: "TIIE+4.6%", renta: 152400, residual: "5%", tir: "23.5%" }, exp: { docsOk: 26, docsTotal: 26, riesgos: "2026-02-15", autorizado: "2026-03-01", cierre: "2026-03-12" }, verde: false, perdida: null, ai: { score: 100, rec: "Cliente activo. Buen pagador. Considerar segunda línea." } },
+  { id: "d15", empresa: "Servicios Logísticos Central", rs: "SERVICIOS LOGÍSTICOS CENTRAL SA DE CV", rfc: "SLC210918DD8", sector: "Transporte y logística", ubicacion: "Puebla", web: "https://slcentral.mx", tipoPersona: "pm", canal: "broker", broker: "Capital Brokers SA", ejecutivo: "Carlos Mendoza", contacto: { nombre: "Lorena Díaz", puesto: "Operaciones", tel: "+52 222 880 1100", email: "ldiaz@slcentral.mx" }, fechaAcercamiento: "2026-03-05", semaforo: "rojo", etapa: "Perdida", activo: { tipo: "Tractocamiones Kenworth (3 unid.)", cat: "Equipo de transporte", valor: 4200000, monto: 3360000, plazo: 48, arr: "Arrendamiento Puro", moneda: "MXN", enganche: "20%" }, ekatena: { fecha: "2026-03-12", viable: true }, contrato: null, exp: { docsOk: 12, docsTotal: 26, riesgos: null, autorizado: null, cierre: null }, verde: false, perdida: "Precio / Tasa no competitiva", ai: { score: 0, rec: "Perdido por tasa. Cliente comparó con 3 competidores. Cerrar archivo." } },
+  { id: "d16", empresa: "Distribuidora Farmacéutica RB", rs: "DISTRIBUIDORA FARMACÉUTICA RB SA DE CV", rfc: "DFR181122RR4", sector: "Salud", ubicacion: "CDMX", web: "https://farmaciasrb.com", tipoPersona: "pm", canal: "referido", broker: null, ejecutivo: "Jorge Fuentes", contacto: { nombre: "Miguel Ángel Pérez", puesto: "CFO", tel: "+52 55 5390 4422", email: "mperez@farmaciasrb.com" }, fechaAcercamiento: "2026-03-10", semaforo: "rojo", etapa: "No calificó", activo: { tipo: "Equipo cadena de frío Carrier", cat: "Equipo médico", valor: 2200000, monto: 1760000, plazo: 36, arr: "Arrendamiento Puro", moneda: "MXN", enganche: "20%" }, ekatena: { fecha: "2026-03-15", viable: false }, contrato: null, exp: { docsOk: 5, docsTotal: 26, riesgos: null, autorizado: null, cierre: null }, verde: false, perdida: "No calificó", motivoNoCalifico: "Buró de crédito", ai: { score: 0, rec: "Buró negativo. Reconsiderar en 12 meses si mejora el reporte." } },
+  { id: "d17", empresa: "Acero Industrial Toluca", rs: "ACERO INDUSTRIAL TOLUCA SA DE CV", rfc: "AIT170604KK9", sector: "Manufactura", ubicacion: "Estado de México", web: "https://aceroit.mx", tipoPersona: "pm", canal: "interno", broker: null, ejecutivo: "Laura Soto", contacto: { nombre: "Mario Vega", puesto: "Director", tel: "+52 722 250 3030", email: "mvega@aceroit.mx" }, fechaAcercamiento: "2026-04-22", semaforo: "amarillo", etapa: "Prospección", activo: { tipo: "Línea de laminado en frío", cat: "Equipo de manufactura", valor: 8200000, monto: 6560000, plazo: 60, arr: "Arrendamiento Financiero", moneda: "USD", enganche: "20%" }, ekatena: { fecha: null, viable: null }, contrato: null, exp: { docsOk: 1, docsTotal: 26, riesgos: null, autorizado: null, cierre: null }, verde: true, perdida: null, ai: { score: 55, rec: "Cliente nuevo en exploración. Programar visita técnica antes de cotizar." } },
+  { id: "d18", empresa: "Constructora Vega Hermanos", rs: "CONSTRUCTORA VEGA HERMANOS SA DE CV", rfc: "CVH140228OO0", sector: "Construcción", ubicacion: "Jalisco", web: "https://vegah.com.mx", tipoPersona: "pfae", canal: "broker", broker: "Brokers Premier", ejecutivo: "Ana Ríos", contacto: { nombre: "Javier Vega", puesto: "Propietario", tel: "+52 33 3650 9911", email: "jvega@vegah.com.mx" }, fechaAcercamiento: "2026-04-05", semaforo: "verde", etapa: "Negociación", activo: { tipo: "Cargador frontal CAT 950 GC", cat: "Maquinaria pesada", valor: 1850000, monto: 1480000, plazo: 36, arr: "Arrendamiento Puro", moneda: "MXN", enganche: "20%" }, ekatena: { fecha: "2026-04-12", viable: true }, contrato: { tasa: "TIIE+5.0%", renta: 52000, residual: "10%", tir: "19.5%" }, exp: { docsOk: 13, docsTotal: 21, riesgos: null, autorizado: null, cierre: null }, verde: false, perdida: null, ai: { score: 71, rec: "PFAE con buen historial. Plazo razonable. Acelerar integración del expediente." } },
+  { id: "d19", empresa: "Comercializadora Pérez", rs: "COMERCIALIZADORA PÉREZ SA DE CV", rfc: "CPE190615ZZ7", sector: "Comercio", ubicacion: "Nuevo León", web: "https://compperez.mx", tipoPersona: "pm", canal: "alianza", broker: "Alianza Banco Local", ejecutivo: "Carlos Mendoza", contacto: { nombre: "Patricia Pérez", puesto: "CEO", tel: "+52 81 8400 5566", email: "pperez@compperez.mx" }, fechaAcercamiento: "2026-04-25", semaforo: "amarillo", etapa: "Prospección", activo: { tipo: "Montacargas Toyota (6 unid.)", cat: "Equipo de manufactura", valor: 3100000, monto: 2480000, plazo: 36, arr: "Arrendamiento Puro", moneda: "MXN", enganche: "20%" }, ekatena: { fecha: null, viable: null }, contrato: null, exp: { docsOk: 0, docsTotal: 26, riesgos: null, autorizado: null, cierre: null }, verde: false, perdida: null, ai: { score: 45, rec: "Lead recién generado. Confirmar interés real antes de invertir tiempo." } },
+  { id: "d20", empresa: "Energía Verde Yucatán", rs: "ENERGÍA VERDE YUCATÁN SA DE CV", rfc: "EVY210812VV1", sector: "Energía", ubicacion: "Yucatán", web: "https://everdeyuc.mx", tipoPersona: "pm", canal: "alianza", broker: "Alianza Verde", ejecutivo: "Jorge Fuentes", contacto: { nombre: "Alejandro Ku", puesto: "Director", tel: "+52 999 320 4040", email: "aku@everdeyuc.mx" }, fechaAcercamiento: "2026-04-20", semaforo: "verde", etapa: "Propuesta", activo: { tipo: "Aerogenerador 2.5MW", cat: "Energía / Generación", valor: 9500000, monto: 7600000, plazo: 60, arr: "Arrendamiento Puro", moneda: "USD", enganche: "20%" }, ekatena: { fecha: "2026-04-22", viable: true }, contrato: { tasa: "TIIE+3.8%", renta: 175000, residual: "12%", tir: "16.4%" }, exp: { docsOk: 7, docsTotal: 26, riesgos: null, autorizado: null, cierre: null }, verde: true, perdida: null, ai: { score: 76, rec: "Operación verde con incentivos disponibles. Coordinar con área de bonos verdes." } },
+  { id: "d21", empresa: "Transportes Carga Pesada", rs: "TRANSPORTES CARGA PESADA SA DE CV", rfc: "TCP100517PP5", sector: "Transporte y logística", ubicacion: "Coahuila", web: "https://tcargapes.mx", tipoPersona: "pm", canal: "broker", broker: "Capital Brokers SA", ejecutivo: "Laura Soto", contacto: { nombre: "Ricardo Flores", puesto: "Operaciones", tel: "+52 844 412 7700", email: "rflores@tcargapes.mx" }, fechaAcercamiento: "2026-03-18", semaforo: "rojo", etapa: "Perdida", activo: { tipo: "Tractocamiones Freightliner (5 unid.)", cat: "Equipo de transporte", valor: 7500000, monto: 6000000, plazo: 48, arr: "Arrendamiento Puro", moneda: "MXN", enganche: "20%" }, ekatena: { fecha: "2026-03-25", viable: true }, contrato: null, exp: { docsOk: 8, docsTotal: 26, riesgos: null, autorizado: null, cierre: null }, verde: false, perdida: "Sin decisión del cliente", ai: { score: 0, rec: "Cliente fríjo. Sin avance en 30 días. Cerrar y reactivar en Q3." } },
+  { id: "d22", empresa: "Servicios IT Empresariales", rs: "SERVICIOS IT EMPRESARIALES SA DE CV", rfc: "SIE200402II9", sector: "Tecnología", ubicacion: "CDMX", web: "https://serviceit.com.mx", tipoPersona: "pm", canal: "interno", broker: null, ejecutivo: "Carlos Mendoza", contacto: { nombre: "Daniela Solís", puesto: "Directora Comercial", tel: "+52 55 5260 3322", email: "dsolis@serviceit.com.mx" }, fechaAcercamiento: "2026-04-28", semaforo: "amarillo", etapa: "Prospección", activo: { tipo: "Equipo de cómputo + UPS APC", cat: "Tecnología / IT", valor: 1850000, monto: 1665000, plazo: 24, arr: "Arrendamiento Puro", moneda: "MXN", enganche: "10%" }, ekatena: { fecha: null, viable: null }, contrato: null, exp: { docsOk: 0, docsTotal: 26, riesgos: null, autorizado: null, cierre: null }, verde: false, perdida: null, ai: { score: 50, rec: "Lead temprano. Calendarizar primera reunión." } },
+];
+
+const CRM_ACTIVITIES_INIT = [
+  { id: 1, dealId: "d01", fecha: "2026-04-30", ejecutivo: "Carlos Mendoza", tipo: "Reunión", resumen: "Presentación de propuesta. Cliente solicitó ajuste en plazo a 60 meses.", siguiente: "Enviar propuesta ajustada · 3 may" },
+  { id: 2, dealId: "d02", fecha: "2026-04-29", ejecutivo: "Ana Ríos", tipo: "Llamada", resumen: "Confirmación de autorización por riesgos. Programación de firma.", siguiente: "Coordinar firma con notario · 8 may" },
+  { id: 3, dealId: "d03", fecha: "2026-04-28", ejecutivo: "Jorge Fuentes", tipo: "Email", resumen: "Envío de propuesta formal con 3 escenarios financieros.", siguiente: "Esperar feedback · 5 may" },
+  { id: 4, dealId: "d04", fecha: "2026-04-27", ejecutivo: "Laura Soto", tipo: "Visita", resumen: "Visita a instalaciones. Revisión de operación agrícola en campo.", siguiente: "Cotización formal · 1 may" },
+  { id: 5, dealId: "d05", fecha: "2026-04-26", ejecutivo: "Carlos Mendoza", tipo: "Zoom", resumen: "Negociación de tasa con CFO. Aceptaron TIIE+4.2%.", siguiente: "Enviar contrato · 2 may" },
+  { id: 6, dealId: "d07", fecha: "2026-04-25", ejecutivo: "Jorge Fuentes", tipo: "Reunión", resumen: "Revisión de proyecto solar con equipo técnico.", siguiente: "Confirmar incentivos verdes · 30 abr" },
+  { id: 7, dealId: "d08", fecha: "2026-04-24", ejecutivo: "Laura Soto", tipo: "Llamada", resumen: "Cliente confirmó autorización. Solicitando solo acta certificada.", siguiente: "Recibir acta y cerrar · 5 may" },
+  { id: 8, dealId: "d09", fecha: "2026-04-22", ejecutivo: "Carlos Mendoza", tipo: "Email", resumen: "Envío de propuesta para resonador magnético. Cliente comparando opciones.", siguiente: "Follow-up · 28 abr" },
+  { id: 9, dealId: "d18", fecha: "2026-04-20", ejecutivo: "Ana Ríos", tipo: "Llamada", resumen: "PFAE solicita 36 meses con tasa fija. Ajustamos cotización.", siguiente: "Recibir documentos faltantes · 25 abr" },
+  { id: 10, dealId: "d20", fecha: "2026-04-23", ejecutivo: "Jorge Fuentes", tipo: "Email", resumen: "Coordinación con área de bonos verdes para incentivos del aerogenerador.", siguiente: "Confirmar elegibilidad · 27 abr" },
+  { id: 11, dealId: "d11", fecha: "2026-04-02", ejecutivo: "Jorge Fuentes", tipo: "Reunión", resumen: "Firma de contrato Sandvik. Operación cerrada exitosamente.", siguiente: "Iniciar entrega · 15 abr" },
+  { id: 12, dealId: "d06", fecha: "2026-04-19", ejecutivo: "Ana Ríos", tipo: "Zoom", resumen: "Primera reunión de evaluación. Cliente requiere envío de información financiera.", siguiente: "Recibir EEFF · 26 abr" },
+  { id: 13, dealId: "d10", fecha: "2026-04-21", ejecutivo: "Ana Ríos", tipo: "Llamada", resumen: "Exploración inicial. Cliente interesado pero sin decisión inmediata.", siguiente: "Agendar visita · 5 may" },
+  { id: 14, dealId: "d15", fecha: "2026-03-22", ejecutivo: "Carlos Mendoza", tipo: "Email", resumen: "Cliente decidió por competidor por mejor tasa. Cerramos como pérdida.", siguiente: "—" },
+  { id: 15, dealId: "d04", fecha: "2026-04-12", ejecutivo: "Laura Soto", tipo: "Email", resumen: "Envío inicial de propuesta. Esperando respuesta.", siguiente: "Follow-up · 18 abr" },
+  { id: 16, dealId: "d17", fecha: "2026-04-26", ejecutivo: "Laura Soto", tipo: "Llamada", resumen: "Primer contacto. Cliente nuevo evaluando proveedores.", siguiente: "Visita técnica · 5 may" },
+];
+
+// ═══════════════════════════════════════════════
+// CRM — HELPERS
+// ═══════════════════════════════════════════════
+const etapaConfig = (id) => CRM_ETAPAS.find(e => e.id === id) || CRM_ETAPAS[0];
+const semaforoConfig = {
+  rojo: { color: T.red, bg: T.redLight, label: "Sin interés" },
+  amarillo: { color: T.amber, bg: T.amberLight, label: "En seguimiento" },
+  verde: { color: T.green, bg: T.greenLight, label: "Listo / Activo" },
+};
+// ═══════════════════════════════════════════════
+// CRM — PIPELINE
+// ═══════════════════════════════════════════════
+function CrmPipelineSection({ deals, activities, onAddDeal, onUpdateDeal, onAddActivity }) {
+  const [view, setView] = useState("kanban"); // kanban | tabla
+  const [search, setSearch] = useState("");
+  const [filterEj, setFilterEj] = useState("todos");
+  const [filterEtapa, setFilterEtapa] = useState("todas");
+  const [selectedId, setSelectedId] = useState(null);
+  const [showNewLead, setShowNewLead] = useState(false);
+
+  const filtered = deals.filter(d => {
+    if (search) {
+      const q = search.toLowerCase();
+      if (!d.empresa.toLowerCase().includes(q) && !d.rs.toLowerCase().includes(q) && !d.rfc.toLowerCase().includes(q) && !d.contacto.nombre.toLowerCase().includes(q)) return false;
+    }
+    if (filterEj !== "todos" && d.ejecutivo !== filterEj) return false;
+    if (filterEtapa !== "todas" && d.etapa !== filterEtapa) return false;
+    return true;
+  });
+
+  const activeStages = ["Prospección", "Propuesta", "Negociación", "Cierre"];
+  const activos = filtered.filter(d => activeStages.includes(d.etapa));
+  const pipelineMonto = activos.reduce((s, d) => s + d.activo.monto, 0);
+  const ganadas = filtered.filter(d => d.etapa === "Ganada").length;
+  const perdidas = filtered.filter(d => d.etapa === "Perdida" || d.etapa === "No calificó").length;
+  const conversionPct = (ganadas + perdidas) > 0 ? (ganadas / (ganadas + perdidas)) * 100 : 0;
+  const ticketProm = activos.length > 0 ? pipelineMonto / activos.length : 0;
+
+  const selected = deals.find(d => d.id === selectedId);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16, animation: "fadeUp .5s ease" }}>
+      {showNewLead && <NewLeadModal onClose={() => setShowNewLead(false)} onSubmit={(deal) => { onAddDeal(deal); setShowNewLead(false); }} />}
+
+      {/* KPIs */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
+        <OpKpi icon="hub" label="Pipeline activo" value={fmtShort(pipelineMonto)} sub={`${activos.length} operaciones`} accent={T.blue} />
+        <OpKpi icon="check_circle" label="Ganadas" value={ganadas.toString()} accent={T.green} />
+        <OpKpi icon="cancel" label="Perdidas" value={perdidas.toString()} accent={T.red} />
+        <OpKpi icon="conversion_path" label="Conversión" value={`${conversionPct.toFixed(0)}%`} accent={T.purple} sub={`${ganadas} de ${ganadas + perdidas}`} />
+        <OpKpi icon="payments" label="Ticket promedio" value={fmtShort(ticketProm)} accent={T.amber} />
+      </div>
+
+      {/* Filters + view toggle */}
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar empresa, RFC o contacto..."
+          style={{ flex: "1 1 240px", padding: "10px 14px", background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radiusSm, fontSize: 13, fontFamily: "inherit", outline: "none" }} />
+        <select value={filterEj} onChange={e => setFilterEj(e.target.value)} style={{ ...inp, width: 180 }}>
+          <option value="todos">Todos los ejecutivos</option>
+          {CRM_EJECUTIVOS.map(ej => <option key={ej} value={ej}>{ej}</option>)}
+        </select>
+        <select value={filterEtapa} onChange={e => setFilterEtapa(e.target.value)} style={{ ...inp, width: 160 }}>
+          <option value="todas">Todas las etapas</option>
+          {CRM_ETAPAS.map(e => <option key={e.id} value={e.id}>{e.id}</option>)}
+        </select>
+        <div style={{ display: "flex", gap: 4, background: T.surfaceAlt, borderRadius: T.radiusSm, padding: 4 }}>
+          {[{ id: "kanban", icon: "view_kanban", label: "Kanban" }, { id: "tabla", icon: "table_rows", label: "Tabla" }].map(v => (
+            <button key={v.id} onClick={() => setView(v.id)}
+              style={{ padding: "7px 14px", border: "none", borderRadius: 5, background: view === v.id ? T.surface : "transparent", color: view === v.id ? T.navy : T.textSecondary, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", boxShadow: view === v.id ? T.shadow : "none", display: "flex", alignItems: "center", gap: 6 }}>
+              <span className="material-symbols-outlined" style={{ fontSize: 14 }}>{v.icon}</span>
+              {v.label}
+            </button>
+          ))}
+        </div>
+        <button onClick={() => setShowNewLead(true)} style={{ padding: "10px 18px", background: T.navy, color: "#fff", border: "none", borderRadius: T.radiusSm, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6 }}>
+          <span className="material-symbols-outlined" style={{ fontSize: 16 }}>add</span>
+          Nuevo lead
+        </button>
+      </div>
+
+      {/* Detail panel (when deal selected) */}
+      {selected && <DealDetailPanel deal={selected} activities={activities} onUpdateDeal={onUpdateDeal} onAddActivity={onAddActivity} onClose={() => setSelectedId(null)} />}
+
+      {/* Kanban view */}
+      {view === "kanban" && (
+        <div style={{ display: "grid", gridTemplateColumns: `repeat(${CRM_ETAPAS.length}, minmax(220px, 1fr))`, gap: 12, overflowX: "auto", paddingBottom: 8 }}>
+          {CRM_ETAPAS.map(stage => {
+            const stageDeals = filtered.filter(d => d.etapa === stage.id);
+            const stageMonto = stageDeals.reduce((s, d) => s + d.activo.monto, 0);
+            return (
+              <div key={stage.id} style={{ background: T.surfaceAlt, borderRadius: T.radius, padding: 10, minWidth: 0 }}>
+                <div style={{ padding: "6px 8px 10px", borderBottom: `2px solid ${stage.color}30`, marginBottom: 8 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6 }}>
+                    <span style={{ fontSize: 11, fontWeight: 800, color: stage.color, textTransform: "uppercase", letterSpacing: 0.6 }}>{stage.id}</span>
+                    <span style={{ fontSize: 10, fontWeight: 800, padding: "2px 7px", borderRadius: 10, background: stage.bg, color: stage.color, fontFamily: "'JetBrains Mono', monospace" }}>{stageDeals.length}</span>
+                  </div>
+                  <div style={{ fontSize: 10, color: T.textTertiary, marginTop: 3, fontFamily: "'JetBrains Mono', monospace" }}>{fmtShort(stageMonto)}</div>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {stageDeals.map(d => (
+                    <button key={d.id} onClick={() => setSelectedId(d.id === selectedId ? null : d.id)} className="hover-lift"
+                      style={{ background: T.surface, border: `1px solid ${selectedId === d.id ? stage.color : T.border}`, borderLeft: `3px solid ${stage.color}`, borderRadius: T.radiusSm, padding: 10, textAlign: "left", cursor: "pointer", fontFamily: "inherit", minWidth: 0 }}>
+                      <div style={{ fontSize: 12, fontWeight: 800, color: T.navy, lineHeight: 1.3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{d.empresa}</div>
+                      <div style={{ fontSize: 10, color: T.textTertiary, marginTop: 3 }}>{d.activo.cat}</div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
+                        <span style={{ fontSize: 11, fontWeight: 800, color: T.text, fontFamily: "'JetBrains Mono', monospace" }}>{fmtShort(d.activo.monto)}</span>
+                        <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 3, background: d.ai.score >= 80 ? T.greenLight : d.ai.score >= 60 ? T.amberLight : T.redLight, color: d.ai.score >= 80 ? T.green : d.ai.score >= 60 ? T.amber : T.red, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace" }}>IA {d.ai.score}</span>
+                      </div>
+                      <div style={{ fontSize: 9, color: T.textTertiary, marginTop: 6, display: "flex", alignItems: "center", gap: 4 }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: 11 }}>person</span>
+                        {d.ejecutivo}
+                      </div>
+                    </button>
+                  ))}
+                  {stageDeals.length === 0 && <div style={{ padding: 14, textAlign: "center", fontSize: 11, color: T.textTertiary, fontStyle: "italic" }}>Sin operaciones</div>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Tabla view */}
+      {view === "tabla" && (
+        <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radius, overflow: "hidden", boxShadow: T.shadow, overflowX: "auto" }}>
+          <div style={{ minWidth: 1100, display: "grid", gridTemplateColumns: "minmax(180px, 1.6fr) 130px minmax(140px, 1fr) 130px 110px 110px 110px 60px", padding: "11px 18px", borderBottom: `1px solid ${T.border}`, background: T.surfaceAlt, gap: 8 }}>
+            {["Empresa", "Etapa", "Activo", "Ejecutivo", "Monto", "Renta", "Acercamiento", "IA"].map(h => (
+              <span key={h} style={{ fontSize: 9, fontWeight: 800, color: T.textTertiary, textTransform: "uppercase", letterSpacing: 0.7 }}>{h}</span>
+            ))}
+          </div>
+          {filtered.length === 0 && <div style={{ padding: 30, textAlign: "center", color: T.textTertiary, fontSize: 12 }}>Sin resultados</div>}
+          {filtered.map((d, i) => {
+            const stage = etapaConfig(d.etapa);
+            const aiBg = d.ai.score >= 80 ? T.greenLight : d.ai.score >= 60 ? T.amberLight : T.redLight;
+            const aiCol = d.ai.score >= 80 ? T.green : d.ai.score >= 60 ? T.amber : T.red;
+            return (
+              <button key={d.id} onClick={() => setSelectedId(d.id === selectedId ? null : d.id)} className="hover-row"
+                style={{ minWidth: 1100, display: "grid", gridTemplateColumns: "minmax(180px, 1.6fr) 130px minmax(140px, 1fr) 130px 110px 110px 110px 60px", padding: "12px 18px", borderBottom: i < filtered.length - 1 ? `1px solid ${T.borderLight}` : "none", gap: 8, alignItems: "center", textAlign: "left", background: selectedId === d.id ? T.blueLight : "transparent", border: "none", cursor: "pointer", fontFamily: "inherit" }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: T.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{d.empresa}</div>
+                  <div style={{ fontSize: 10, color: T.textTertiary, fontFamily: "'JetBrains Mono', monospace" }}>{d.rfc}</div>
+                </div>
+                <span style={{ fontSize: 10, padding: "3px 9px", borderRadius: 12, background: stage.bg, color: stage.color, fontWeight: 800, justifySelf: "start" }}>{d.etapa}</span>
+                <span style={{ fontSize: 11, color: T.textSecondary, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{d.activo.cat}</span>
+                <span style={{ fontSize: 11, color: T.text }}>{d.ejecutivo}</span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: T.navy, fontFamily: "'JetBrains Mono', monospace" }}>{fmtShort(d.activo.monto)}</span>
+                <span style={{ fontSize: 11, color: T.textSecondary, fontFamily: "'JetBrains Mono', monospace" }}>{d.contrato ? fmtShort(d.contrato.renta) : "—"}</span>
+                <span style={{ fontSize: 10, color: T.textTertiary, fontFamily: "'JetBrains Mono', monospace" }}>{d.fechaAcercamiento}</span>
+                <span style={{ fontSize: 11, fontWeight: 800, padding: "3px 7px", borderRadius: 4, background: aiBg, color: aiCol, fontFamily: "'JetBrains Mono', monospace", textAlign: "center" }}>{d.ai.score}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════
+// CRM — DEAL DETAIL PANEL
+// ═══════════════════════════════════════════════
+function DealDetailPanel({ deal: d, activities, onUpdateDeal, onAddActivity, onClose }) {
+  const stage = etapaConfig(d.etapa);
+  const sem = semaforoConfig[d.semaforo] || semaforoConfig.amarillo;
+  const docPct = (d.exp.docsOk / d.exp.docsTotal) * 100;
+  const dealActs = activities.filter(a => a.dealId === d.id).sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+  const aiBg = d.ai.score >= 80 ? T.greenLight : d.ai.score >= 60 ? T.amberLight : T.redLight;
+  const aiCol = d.ai.score >= 80 ? T.green : d.ai.score >= 60 ? T.amber : T.red;
+  const [showActForm, setShowActForm] = useState(false);
+  const [actForm, setActForm] = useState({ fecha: new Date().toISOString().slice(0, 10), tipo: "Llamada", resumen: "", siguiente: "" });
+
+  return (
+    <div style={{ ...opCard, padding: 0, borderLeft: `4px solid ${stage.color}`, animation: "fadeUp .3s ease" }}>
+      {/* Header */}
+      <div style={{ padding: "16px 20px", borderBottom: `1px solid ${T.borderLight}`, display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 14, flexWrap: "wrap" }}>
+        <div style={{ minWidth: 0, flex: "1 1 240px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 10, padding: "3px 9px", borderRadius: 12, background: stage.bg, color: stage.color, fontWeight: 800 }}>{d.etapa}</span>
+            <span style={{ fontSize: 10, padding: "3px 9px", borderRadius: 12, background: sem.bg, color: sem.color, fontWeight: 800 }}>● {sem.label}</span>
+            {d.verde && <span style={{ fontSize: 10, padding: "3px 9px", borderRadius: 12, background: T.greenLight, color: T.green, fontWeight: 800 }}>🌿 Verde</span>}
+            <span style={{ fontSize: 10, padding: "3px 9px", borderRadius: 12, background: T.surfaceAlt, color: T.textSecondary, fontWeight: 700 }}>{d.tipoPersona === "pm" ? "Persona Moral" : "PFAE"}</span>
+          </div>
+          <h2 style={{ fontSize: 18, fontWeight: 800, color: T.navy, margin: 0 }}>{d.empresa}</h2>
+          <div style={{ fontSize: 11, color: T.textTertiary, fontFamily: "'JetBrains Mono', monospace", marginTop: 2 }}>{d.rs} · {d.rfc}</div>
+        </div>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <span style={{ fontSize: 11, fontWeight: 800, padding: "5px 10px", borderRadius: 6, background: aiBg, color: aiCol, fontFamily: "'JetBrains Mono', monospace" }}>IA · {d.ai.score}</span>
+          <button onClick={onClose} style={{ background: T.surfaceAlt, border: `1px solid ${T.border}`, borderRadius: T.radiusSm, padding: "6px 10px", cursor: "pointer", fontSize: 12, fontFamily: "inherit", color: T.textSecondary, display: "flex", alignItems: "center", gap: 4 }}>
+            <span className="material-symbols-outlined" style={{ fontSize: 14 }}>close</span>
+            Cerrar
+          </button>
+        </div>
+      </div>
+
+      {/* Stage mover */}
+      <div style={{ padding: "12px 20px", borderBottom: `1px solid ${T.borderLight}`, background: T.surfaceAlt, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+        <span style={{ fontSize: 10, fontWeight: 800, color: T.textTertiary, letterSpacing: 1, textTransform: "uppercase", marginRight: 4 }}>Mover a:</span>
+        <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+          {CRM_ETAPAS.map(s => {
+            const active = d.etapa === s.id;
+            return (
+              <button key={s.id} onClick={() => onUpdateDeal(d.id, { etapa: s.id })}
+                style={{ padding: "5px 11px", borderRadius: 12, border: `1px solid ${active ? s.color : T.border}`, background: active ? s.bg : T.surface, color: active ? s.color : T.textSecondary, fontSize: 10, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", letterSpacing: 0.3 }}>
+                {s.id}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* AI insight */}
+      <div style={{ padding: "12px 20px", background: `linear-gradient(135deg, ${T.purple}08, ${T.blue}08)`, borderBottom: `1px solid ${T.borderLight}`, display: "flex", alignItems: "flex-start", gap: 10 }}>
+        <span className="material-symbols-outlined" style={{ fontSize: 18, color: T.purple, flexShrink: 0, marginTop: 2 }}>psychology</span>
+        <div>
+          <div style={{ fontSize: 10, fontWeight: 800, color: T.purple, letterSpacing: 1, textTransform: "uppercase", marginBottom: 3 }}>Recomendación IA</div>
+          <div style={{ fontSize: 12, color: T.text, lineHeight: 1.5 }}>{d.ai.rec}</div>
+        </div>
+      </div>
+
+      {/* Body grid */}
+      <div style={{ padding: 20, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 14 }}>
+        {/* Empresa */}
+        <DealCard title="Datos de la empresa" icon="business">
+          <DealRow label="Sector" value={d.sector} />
+          <DealRow label="Ubicación" value={d.ubicacion} />
+          <DealRow label="Web" value={<a href={d.web} target="_blank" rel="noreferrer" style={{ color: T.blue, textDecoration: "none", fontSize: 12 }}>{d.web.replace(/https?:\/\//, "")}</a>} />
+          <DealRow label="Tipo de persona" value={d.tipoPersona === "pm" ? "Persona Moral" : "PFAE"} />
+        </DealCard>
+        {/* Contacto */}
+        <DealCard title="Contacto principal" icon="contact_mail">
+          <DealRow label="Nombre" value={d.contacto.nombre} accent />
+          <DealRow label="Puesto" value={d.contacto.puesto} />
+          <DealRow label="Teléfono" value={d.contacto.tel} mono />
+          <DealRow label="Email" value={d.contacto.email} mono />
+        </DealCard>
+        {/* Origen */}
+        <DealCard title="Origen y asignación" icon="route">
+          <DealRow label="Canal" value={d.canal.charAt(0).toUpperCase() + d.canal.slice(1)} />
+          {d.broker && <DealRow label="Broker / Alianza" value={d.broker} />}
+          <DealRow label="Ejecutivo asignado" value={d.ejecutivo} accent />
+          <DealRow label="Fecha acercamiento" value={d.fechaAcercamiento} mono />
+        </DealCard>
+        {/* Activo */}
+        <DealCard title="Activo y propuesta" icon="precision_manufacturing">
+          <DealRow label="Tipo" value={d.activo.tipo} accent />
+          <DealRow label="Categoría" value={d.activo.cat} />
+          <DealRow label="Valor del activo" value={`${fmt(d.activo.valor)} ${d.activo.moneda}`} mono />
+          <DealRow label="Monto a financiar" value={`${fmt(d.activo.monto)} ${d.activo.moneda}`} accent mono />
+          <DealRow label="Plazo / Tipo" value={`${d.activo.plazo} meses · ${d.activo.arr}`} />
+          <DealRow label="Enganche" value={d.activo.enganche} />
+        </DealCard>
+        {/* Ekatena + Contrato */}
+        <DealCard title="Ekatena y contratación" icon="verified">
+          <DealRow label="Firma CIEC" value={d.ekatena.fecha || "—"} mono />
+          <DealRow label="Buró viable" value={d.ekatena.viable === null ? "Pendiente" : d.ekatena.viable ? "✓ Sí" : "✗ No"} accent />
+          {d.contrato && (
+            <>
+              <DealRow label="Tasa aplicada" value={d.contrato.tasa} />
+              <DealRow label="Renta mensual" value={fmt(d.contrato.renta)} mono accent />
+              <DealRow label="TIR" value={d.contrato.tir} />
+              <DealRow label="Valor residual" value={d.contrato.residual} />
+            </>
+          )}
+        </DealCard>
+        {/* Expediente */}
+        <DealCard title="Expediente y proceso" icon="folder_open">
+          <div style={{ padding: "10px 16px", borderBottom: `1px solid ${T.borderLight}` }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 11 }}>
+              <span style={{ color: T.textTertiary }}>Documentos integrados</span>
+              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 800, color: T.navy }}>{d.exp.docsOk}/{d.exp.docsTotal}</span>
+            </div>
+            <div style={{ height: 6, background: T.surfaceAlt, borderRadius: 3, overflow: "hidden" }}>
+              <div style={{ height: "100%", width: `${docPct}%`, background: docPct >= 90 ? T.green : docPct >= 50 ? T.amber : T.red, borderRadius: 3 }} />
+            </div>
+          </div>
+          <DealRow label="Ingreso a riesgos" value={d.exp.riesgos || "Pendiente"} mono />
+          <DealRow label="Autorizado" value={d.exp.autorizado || "Pendiente"} mono />
+          <DealRow label="Cierre" value={d.exp.cierre || "Pendiente"} mono accent />
+          {d.perdida && <DealRow label="Motivo de pérdida" value={d.perdida} />}
+        </DealCard>
+      </div>
+
+      {/* Activities timeline + registro */}
+      <div style={{ padding: "0 20px 20px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+          <span style={{ fontSize: 10, fontWeight: 800, color: T.textTertiary, letterSpacing: 1, textTransform: "uppercase" }}>Bitácora · {dealActs.length}</span>
+          <button onClick={() => setShowActForm(!showActForm)}
+            style={{ padding: "6px 12px", background: showActForm ? T.surfaceAlt : T.navy, color: showActForm ? T.text : "#fff", border: `1px solid ${showActForm ? T.border : T.navy}`, borderRadius: T.radiusSm, fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 5 }}>
+            <span className="material-symbols-outlined" style={{ fontSize: 14 }}>{showActForm ? "close" : "add"}</span>
+            {showActForm ? "Cancelar" : "Registrar actividad"}
+          </button>
+        </div>
+
+        {showActForm && (
+          <div style={{ background: T.blueLight, border: `1px solid ${T.blue}30`, borderRadius: T.radiusSm, padding: 14, marginBottom: 10 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10, marginBottom: 10 }}>
+              <div>
+                <label style={lbl}>Fecha</label>
+                <input type="date" value={actForm.fecha} onChange={e => setActForm({ ...actForm, fecha: e.target.value })} style={inp} />
+              </div>
+              <div>
+                <label style={lbl}>Tipo</label>
+                <select value={actForm.tipo} onChange={e => setActForm({ ...actForm, tipo: e.target.value })} style={inp}>
+                  {["Llamada", "Reunión", "Zoom", "Email", "Visita", "WhatsApp"].map(t => <option key={t}>{t}</option>)}
+                </select>
+              </div>
+            </div>
+            <div style={{ marginBottom: 10 }}>
+              <label style={lbl}>Resumen</label>
+              <textarea rows={2} value={actForm.resumen} onChange={e => setActForm({ ...actForm, resumen: e.target.value })} placeholder="Resultado de la actividad..." style={{ ...inp, resize: "vertical", minHeight: 60 }} />
+            </div>
+            <div style={{ marginBottom: 10 }}>
+              <label style={lbl}>Siguiente paso</label>
+              <input value={actForm.siguiente} onChange={e => setActForm({ ...actForm, siguiente: e.target.value })} placeholder="Ej. Follow-up el viernes" style={inp} />
+            </div>
+            <button onClick={() => {
+              if (!actForm.resumen.trim()) return;
+              onAddActivity({ dealId: d.id, fecha: actForm.fecha, ejecutivo: d.ejecutivo, tipo: actForm.tipo, resumen: actForm.resumen.trim(), siguiente: actForm.siguiente.trim() || "—" });
+              setActForm({ fecha: new Date().toISOString().slice(0, 10), tipo: "Llamada", resumen: "", siguiente: "" });
+              setShowActForm(false);
+            }} disabled={!actForm.resumen.trim()}
+              style={{ padding: "9px 16px", background: actForm.resumen.trim() ? T.blue : T.border, color: "#fff", border: "none", borderRadius: T.radiusSm, fontSize: 12, fontWeight: 700, cursor: actForm.resumen.trim() ? "pointer" : "not-allowed", fontFamily: "inherit" }}>
+              Guardar actividad
+            </button>
+          </div>
+        )}
+
+        {dealActs.length === 0 && !showActForm && (
+          <div style={{ padding: 18, textAlign: "center", color: T.textTertiary, fontSize: 12, fontStyle: "italic", background: T.surfaceAlt, borderRadius: T.radiusSm }}>Sin actividades registradas para este lead</div>
+        )}
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {dealActs.map(a => (
+            <div key={a.id} style={{ display: "grid", gridTemplateColumns: "90px 100px 1fr", gap: 12, padding: 11, background: T.surfaceAlt, borderRadius: T.radiusSm, borderLeft: `3px solid ${T.blue}` }}>
+              <span style={{ fontSize: 10, color: T.textTertiary, fontFamily: "'JetBrains Mono', monospace" }}>{a.fecha}</span>
+              <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 3, background: T.blueLight, color: T.blue, fontWeight: 800, justifySelf: "start", height: "fit-content" }}>{a.tipo}</span>
+              <div>
+                <div style={{ fontSize: 12, color: T.text }}>{a.resumen}</div>
+                {a.siguiente && a.siguiente !== "—" && <div style={{ fontSize: 10, color: T.green, marginTop: 4, fontWeight: 600 }}>→ {a.siguiente}</div>}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════
+// CRM — NEW LEAD MODAL
+// ═══════════════════════════════════════════════
+function NewLeadModal({ onClose, onSubmit }) {
+  const [f, setF] = useState({
+    empresa: "", rs: "", rfc: "", sector: "Manufactura", ubicacion: "", web: "",
+    tipoPersona: "pm", canal: "interno", broker: "", ejecutivo: CRM_EJECUTIVOS[0],
+    semaforo: "amarillo", etapa: "Prospección",
+    contacto: { nombre: "", puesto: "", tel: "", email: "" },
+    activo: { tipo: "", cat: "Equipo de transporte", valor: "", monto: "", plazo: 36, arr: "Arrendamiento Puro", moneda: "MXN", enganche: "20%" },
+    fechaAcercamiento: new Date().toISOString().slice(0, 10),
+  });
+
+  const setField = (k, v) => setF(p => ({ ...p, [k]: v }));
+  const setContacto = (k, v) => setF(p => ({ ...p, contacto: { ...p.contacto, [k]: v } }));
+  const setActivo = (k, v) => setF(p => ({ ...p, activo: { ...p.activo, [k]: v } }));
+
+  const valid = f.empresa.trim() && f.rfc.trim() && f.contacto.nombre.trim() && f.contacto.email.trim() && f.activo.tipo.trim() && +f.activo.valor > 0;
+
+  const submit = () => {
+    if (!valid) return;
+    const valor = +f.activo.valor;
+    const monto = +f.activo.monto || valor * 0.8;
+    onSubmit({
+      empresa: f.empresa.trim(), rs: (f.rs.trim() || f.empresa.toUpperCase()), rfc: f.rfc.trim().toUpperCase(),
+      sector: f.sector, ubicacion: f.ubicacion.trim(), web: f.web.trim() || "",
+      tipoPersona: f.tipoPersona, canal: f.canal, broker: f.broker.trim() || null, ejecutivo: f.ejecutivo,
+      contacto: { ...f.contacto },
+      fechaAcercamiento: f.fechaAcercamiento, semaforo: f.semaforo, etapa: f.etapa,
+      activo: { tipo: f.activo.tipo.trim(), cat: f.activo.cat, valor, monto, plazo: +f.activo.plazo, arr: f.activo.arr, moneda: f.activo.moneda, enganche: f.activo.enganche },
+      ekatena: { fecha: null, viable: null }, contrato: null,
+      exp: { docsOk: 0, docsTotal: f.tipoPersona === "pfae" ? 21 : 26, riesgos: null, autorizado: null, cierre: null },
+      verde: false, perdida: null,
+      ai: { score: 50, rec: "Lead recién registrado. Confirmar interés y agendar primera reunión para calificar." },
+    });
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(13, 15, 18, 0.55)", zIndex: 1000, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "40px 20px", overflowY: "auto", animation: "fadeIn .2s ease" }} onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} style={{ background: T.surface, borderRadius: T.radius, maxWidth: 760, width: "100%", boxShadow: T.shadowLg, animation: "fadeUp .25s ease" }}>
+        <div style={{ padding: "16px 22px", borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div>
+            <div style={{ fontSize: 10, fontWeight: 800, color: T.blue, letterSpacing: 1, textTransform: "uppercase" }}>Fase 1 · Prospección</div>
+            <h2 style={{ fontSize: 18, fontWeight: 800, color: T.navy, margin: "2px 0 0" }}>Registrar nuevo lead</h2>
+          </div>
+          <button onClick={onClose} style={{ background: T.surfaceAlt, border: `1px solid ${T.border}`, borderRadius: T.radiusSm, padding: "6px 10px", cursor: "pointer", fontSize: 12, fontFamily: "inherit", color: T.textSecondary }}>✕</button>
+        </div>
+
+        <div style={{ padding: 22, display: "flex", flexDirection: "column", gap: 18 }}>
+          <FormSection title="Datos de la empresa">
+            <FormGrid cols={2}>
+              <Field label="Nombre comercial" req value={f.empresa} onChange={v => setField("empresa", v)} placeholder="Ej. Transportes del Norte" />
+              <Field label="Razón social" value={f.rs} onChange={v => setField("rs", v)} placeholder="Como aparece en acta constitutiva" />
+              <Field label="RFC" req value={f.rfc} onChange={v => setField("rfc", v.toUpperCase())} placeholder="XAXX010101000" />
+              <Field label="Tipo de persona" type="select" value={f.tipoPersona} onChange={v => setField("tipoPersona", v)} options={[{ v: "pm", l: "Persona Moral" }, { v: "pfae", l: "PFAE" }]} />
+              <Field label="Sector / Industria" type="select" value={f.sector} onChange={v => setField("sector", v)} options={["Manufactura", "Transporte y logística", "Construcción", "Comercio", "Agropecuario", "Servicios", "Tecnología", "Salud", "Energía"].map(s => ({ v: s, l: s }))} />
+              <Field label="Ubicación" value={f.ubicacion} onChange={v => setField("ubicacion", v)} placeholder="Estado / Ciudad" />
+              <Field label="Página web" value={f.web} onChange={v => setField("web", v)} placeholder="https://..." />
+            </FormGrid>
+          </FormSection>
+
+          <FormSection title="Contacto principal">
+            <FormGrid cols={2}>
+              <Field label="Nombre" req value={f.contacto.nombre} onChange={v => setContacto("nombre", v)} placeholder="Nombre completo" />
+              <Field label="Puesto" value={f.contacto.puesto} onChange={v => setContacto("puesto", v)} placeholder="Director, Gerente..." />
+              <Field label="Teléfono" value={f.contacto.tel} onChange={v => setContacto("tel", v)} placeholder="+52 ..." />
+              <Field label="Email" req value={f.contacto.email} onChange={v => setContacto("email", v)} placeholder="contacto@empresa.com" />
+            </FormGrid>
+          </FormSection>
+
+          <FormSection title="Origen y asignación">
+            <FormGrid cols={3}>
+              <Field label="Canal" type="select" value={f.canal} onChange={v => setField("canal", v)} options={[{ v: "interno", l: "Interno" }, { v: "referido", l: "Referido" }, { v: "broker", l: "Broker" }, { v: "alianza", l: "Alianza" }]} />
+              {(f.canal === "broker" || f.canal === "alianza") && <Field label="Nombre broker / alianza" value={f.broker} onChange={v => setField("broker", v)} placeholder="Razón social" />}
+              <Field label="Ejecutivo" type="select" value={f.ejecutivo} onChange={v => setField("ejecutivo", v)} options={CRM_EJECUTIVOS.map(e => ({ v: e, l: e }))} />
+              <Field label="Fecha acercamiento" type="date" value={f.fechaAcercamiento} onChange={v => setField("fechaAcercamiento", v)} />
+              <Field label="Semáforo" type="select" value={f.semaforo} onChange={v => setField("semaforo", v)} options={[{ v: "rojo", l: "Sin interés" }, { v: "amarillo", l: "En seguimiento" }, { v: "verde", l: "Listo / Activo" }]} />
+              <Field label="Etapa inicial" type="select" value={f.etapa} onChange={v => setField("etapa", v)} options={CRM_ETAPAS.map(e => ({ v: e.id, l: e.id }))} />
+            </FormGrid>
+          </FormSection>
+
+          <FormSection title="Activo y propuesta inicial">
+            <FormGrid cols={2}>
+              <Field label="Tipo de activo" req value={f.activo.tipo} onChange={v => setActivo("tipo", v)} placeholder="Ej. Volvo FH 540 (5 unid.)" />
+              <Field label="Categoría" type="select" value={f.activo.cat} onChange={v => setActivo("cat", v)} options={["Equipo de transporte", "Maquinaria pesada", "Equipo de manufactura", "Tecnología / IT", "Equipo médico", "Inmueble productivo", "Equipo de construcción", "Energía / Generación", "Otro"].map(c => ({ v: c, l: c }))} />
+              <Field label="Valor del activo (MXN)" req type="number" value={f.activo.valor} onChange={v => setActivo("valor", v)} placeholder="0" />
+              <Field label="Monto a financiar" type="number" value={f.activo.monto} onChange={v => setActivo("monto", v)} placeholder="(80% del valor si vacío)" />
+              <Field label="Plazo (meses)" type="select" value={f.activo.plazo} onChange={v => setActivo("plazo", v)} options={[12, 24, 36, 48, 60].map(p => ({ v: p, l: `${p} meses` }))} />
+              <Field label="Tipo arrendamiento" type="select" value={f.activo.arr} onChange={v => setActivo("arr", v)} options={[{ v: "Arrendamiento Puro", l: "Arrendamiento Puro" }, { v: "Arrendamiento Financiero", l: "Arrendamiento Financiero" }, { v: "Sale & Lease Back", l: "Sale & Lease Back" }]} />
+              <Field label="Moneda" type="select" value={f.activo.moneda} onChange={v => setActivo("moneda", v)} options={[{ v: "MXN", l: "MXN" }, { v: "USD", l: "USD" }]} />
+              <Field label="Enganche" value={f.activo.enganche} onChange={v => setActivo("enganche", v)} placeholder="20% o monto" />
+            </FormGrid>
+          </FormSection>
+        </div>
+
+        <div style={{ padding: "14px 22px", borderTop: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", background: T.surfaceAlt }}>
+          <span style={{ fontSize: 11, color: T.textTertiary }}>Campos con <span style={{ color: T.red }}>*</span> son requeridos</span>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={onClose} style={{ padding: "9px 16px", background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radiusSm, fontSize: 12, fontWeight: 600, color: T.textSecondary, cursor: "pointer", fontFamily: "inherit" }}>Cancelar</button>
+            <button onClick={submit} disabled={!valid}
+              style={{ padding: "9px 18px", background: valid ? T.navy : T.border, color: "#fff", border: "none", borderRadius: T.radiusSm, fontSize: 12, fontWeight: 700, cursor: valid ? "pointer" : "not-allowed", fontFamily: "inherit" }}>
+              Crear lead
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FormSection({ title, children }) {
+  return (
+    <div>
+      <div style={{ fontSize: 10, fontWeight: 800, color: T.navy, letterSpacing: 1, textTransform: "uppercase", marginBottom: 10, paddingBottom: 6, borderBottom: `1px solid ${T.borderLight}` }}>{title}</div>
+      {children}
+    </div>
+  );
+}
+
+function FormGrid({ cols = 2, children }) {
+  return <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, gap: 10 }}>{children}</div>;
+}
+
+function Field({ label, req, type = "text", value, onChange, placeholder, options }) {
+  return (
+    <div style={{ minWidth: 0 }}>
+      <label style={{ ...lbl, display: "flex", alignItems: "center", gap: 4 }}>
+        {label}{req && <span style={{ color: T.red }}>*</span>}
+      </label>
+      {type === "select" ? (
+        <select value={value} onChange={e => onChange(e.target.value)} style={inp}>
+          {options.map(o => <option key={o.v} value={o.v}>{o.l}</option>)}
+        </select>
+      ) : (
+        <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} style={inp} />
+      )}
+    </div>
+  );
+}
+
+function DealCard({ title, icon, children }) {
+  return (
+    <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radiusSm, overflow: "hidden", minWidth: 0 }}>
+      <div style={{ padding: "10px 16px", borderBottom: `1px solid ${T.borderLight}`, background: T.surfaceAlt, display: "flex", alignItems: "center", gap: 8 }}>
+        <span className="material-symbols-outlined" style={{ fontSize: 14, color: T.navy }}>{icon}</span>
+        <span style={{ fontSize: 11, fontWeight: 800, color: T.navy, letterSpacing: 0.5, textTransform: "uppercase" }}>{title}</span>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function DealRow({ label, value, accent, mono }) {
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 16px", borderBottom: `1px solid ${T.borderLight}`, gap: 10, alignItems: "flex-start" }}>
+      <span style={{ fontSize: 11, color: T.textTertiary, flexShrink: 0 }}>{label}</span>
+      <span style={{ fontSize: 12, fontWeight: accent ? 700 : 500, color: accent ? T.navy : T.text, fontFamily: mono ? "'JetBrains Mono', monospace" : "inherit", textAlign: "right", wordBreak: "break-word", minWidth: 0 }}>{value}</span>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════
+// CRM — REPORTES
+// ═══════════════════════════════════════════════
+function CrmReportesSection({ deals, activities }) {
+  const [tab, setTab] = useState("pipeline");
+  const tabs = [
+    { id: "pipeline", label: "Pipeline" },
+    { id: "actividad", label: "Actividad Comercial" },
+    { id: "regional", label: "Regional" },
+    { id: "trimestre", label: "Trimestre Anterior" },
+  ];
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 18, animation: "fadeUp .5s ease" }}>
+      <div style={{ display: "flex", gap: 0, borderBottom: `2px solid ${T.border}` }}>
+        {tabs.map(t => (
+          <button key={t.id} onClick={() => setTab(t.id)}
+            style={{ padding: "10px 18px", border: "none", borderBottom: tab === t.id ? `2px solid ${T.navy}` : "2px solid transparent", marginBottom: -2, background: "transparent", color: tab === t.id ? T.navy : T.textSecondary, fontSize: 13, fontWeight: tab === t.id ? 700 : 500, cursor: "pointer", fontFamily: "inherit" }}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {tab === "pipeline" && <ReportePipeline deals={deals} />}
+      {tab === "actividad" && <ReporteActividad deals={deals} activities={activities} />}
+      {tab === "regional" && <ReporteRegional deals={deals} />}
+      {tab === "trimestre" && <ReporteTrimestre deals={deals} />}
+    </div>
+  );
+}
+
+function ReportePipeline({ deals }) {
+  const activos = deals.filter(d => ["Prospección", "Propuesta", "Negociación", "Cierre"].includes(d.etapa));
+  const pipelineMonto = activos.reduce((s, d) => s + d.activo.monto, 0);
+  const ganadas = deals.filter(d => d.etapa === "Ganada").length;
+  const perdidas = deals.filter(d => d.etapa === "Perdida" || d.etapa === "No calificó").length;
+  const conversion = (ganadas + perdidas) > 0 ? (ganadas / (ganadas + perdidas)) * 100 : 0;
+  const ticket = activos.length > 0 ? pipelineMonto / activos.length : 0;
+  const expRiesgos = deals.filter(d => d.exp.riesgos && !d.exp.cierre).length;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
+        <OpKpi icon="hub" label="Pipeline total" value={fmtShort(pipelineMonto)} accent={T.navy} sub="Monto ponderado activo" />
+        <OpKpi icon="pending_actions" label="Operaciones activas" value={activos.length.toString()} accent={T.blue} />
+        <OpKpi icon="conversion_path" label="Tasa conversión" value={`${conversion.toFixed(0)}%`} accent={T.purple} />
+        <OpKpi icon="payments" label="Ticket promedio" value={fmtShort(ticket)} accent={T.amber} />
+        <OpKpi icon="folder_open" label="Expedientes en riesgos" value={expRiesgos.toString()} accent={T.green} />
+      </div>
+
+      <div style={opCard}>
+        <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: "0 0 14px" }}>Distribución por etapa</h3>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {CRM_ETAPAS.map(stage => {
+            const ds = deals.filter(d => d.etapa === stage.id);
+            const monto = ds.reduce((s, d) => s + d.activo.monto, 0);
+            const pct = (ds.length / (deals.length || 1)) * 100;
+            return (
+              <div key={stage.id} style={{ display: "grid", gridTemplateColumns: "150px 60px minmax(0, 1fr) 100px", gap: 12, alignItems: "center" }}>
+                <span style={{ fontSize: 11, padding: "3px 9px", borderRadius: 12, background: stage.bg, color: stage.color, fontWeight: 800, justifySelf: "start" }}>{stage.id}</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: T.navy, fontFamily: "'JetBrains Mono', monospace" }}>{ds.length}</span>
+                <div style={{ height: 8, borderRadius: 4, background: T.surfaceAlt, overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${pct}%`, background: stage.color, borderRadius: 4 }} />
+                </div>
+                <span style={{ fontSize: 11, fontWeight: 700, color: T.text, fontFamily: "'JetBrains Mono', monospace", textAlign: "right" }}>{fmtShort(monto)}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ReporteActividad({ deals, activities }) {
+  const ejecutivosStats = CRM_EJECUTIVOS.map(ej => {
+    const dealsEj = deals.filter(d => d.ejecutivo === ej);
+    const acts = activities.filter(a => a.ejecutivo === ej).length;
+    const ganadas = dealsEj.filter(d => d.etapa === "Ganada");
+    const expedientes = dealsEj.filter(d => d.exp.riesgos).length;
+    const cotizaciones = dealsEj.filter(d => d.contrato).length;
+    const cerrado = ganadas.reduce((s, d) => s + d.activo.monto, 0);
+    return { ej, citas: acts, cotizaciones, expedientes, cierres: ganadas.length, cerrado };
+  });
+
+  const motivosCount = {};
+  deals.forEach(d => { if (d.perdida) motivosCount[d.perdida] = (motivosCount[d.perdida] || 0) + 1; });
+  const totalPerdidas = Object.values(motivosCount).reduce((s, n) => s + n, 0) || 1;
+  const motivosArr = Object.entries(motivosCount).sort((a, b) => b[1] - a[1]);
+
+  const totalCitas = activities.length;
+  const totalCotiz = deals.filter(d => d.contrato).length;
+  const totalExp = deals.filter(d => d.exp.riesgos).length;
+  const totalAuto = deals.filter(d => d.exp.autorizado).length;
+  const brokersAct = new Set(deals.filter(d => d.canal === "broker" && d.broker && ["Prospección","Propuesta","Negociación","Cierre"].includes(d.etapa)).map(d => d.broker)).size;
+  const alianzasAct = new Set(deals.filter(d => d.canal === "alianza" && d.broker && ["Prospección","Propuesta","Negociación","Cierre"].includes(d.etapa)).map(d => d.broker)).size;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
+        <OpKpi icon="event" label="Actividades registradas" value={totalCitas.toString()} accent={T.blue} />
+        <OpKpi icon="description" label="Cotizaciones" value={totalCotiz.toString()} accent={T.purple} />
+        <OpKpi icon="folder_managed" label="Expedientes" value={totalExp.toString()} accent={T.amber} />
+        <OpKpi icon="check_circle" label="Autorizaciones" value={totalAuto.toString()} accent={T.green} />
+        <OpKpi icon="hub" label="Brokers activos" value={brokersAct.toString()} accent={T.navy} />
+        <OpKpi icon="handshake" label="Alianzas activas" value={alianzasAct.toString()} accent="#0E7490" />
+      </div>
+
+      <div style={opCard}>
+        <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: "0 0 14px" }}>Actividad por ejecutivo</h3>
+        <div style={{ display: "grid", gridTemplateColumns: "1.5fr repeat(5, 1fr)", gap: 8, fontSize: 11 }}>
+          {["Ejecutivo", "Citas", "Cotizaciones", "Expedientes", "Cierres", "Monto cerrado"].map(h => (
+            <span key={h} style={{ fontSize: 9, fontWeight: 800, color: T.textTertiary, textTransform: "uppercase", letterSpacing: 0.7, padding: "0 0 8px", borderBottom: `1px solid ${T.border}` }}>{h}</span>
+          ))}
+          {ejecutivosStats.map(e => (
+            <React.Fragment key={e.ej}>
+              <span style={{ fontWeight: 700, color: T.navy, padding: "10px 0", borderBottom: `1px solid ${T.borderLight}` }}>{e.ej}</span>
+              <span style={{ padding: "10px 0", borderBottom: `1px solid ${T.borderLight}`, fontFamily: "'JetBrains Mono', monospace" }}>{e.citas}</span>
+              <span style={{ padding: "10px 0", borderBottom: `1px solid ${T.borderLight}`, fontFamily: "'JetBrains Mono', monospace" }}>{e.cotizaciones}</span>
+              <span style={{ padding: "10px 0", borderBottom: `1px solid ${T.borderLight}`, fontFamily: "'JetBrains Mono', monospace" }}>{e.expedientes}</span>
+              <span style={{ padding: "10px 0", borderBottom: `1px solid ${T.borderLight}`, fontFamily: "'JetBrains Mono', monospace", color: T.green, fontWeight: 700 }}>{e.cierres}</span>
+              <span style={{ padding: "10px 0", borderBottom: `1px solid ${T.borderLight}`, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: T.navy }}>{fmtShort(e.cerrado)}</span>
+            </React.Fragment>
+          ))}
+        </div>
+      </div>
+
+      <div style={opCard}>
+        <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: "0 0 14px" }}>Principales motivos de pérdida</h3>
+        {motivosArr.length === 0 && <div style={{ padding: 14, textAlign: "center", color: T.textTertiary, fontSize: 12 }}>Sin pérdidas registradas</div>}
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {motivosArr.map(([motivo, count]) => {
+            const pct = (count / totalPerdidas) * 100;
+            return (
+              <div key={motivo} style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.4fr) 50px minmax(0, 1fr) 60px", gap: 10, alignItems: "center" }}>
+                <span style={{ fontSize: 12, color: T.text }}>{motivo}</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: T.navy, fontFamily: "'JetBrains Mono', monospace" }}>{count}</span>
+                <div style={{ height: 6, borderRadius: 3, background: T.surfaceAlt, overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${pct}%`, background: T.red, borderRadius: 3 }} />
+                </div>
+                <span style={{ fontSize: 11, fontWeight: 700, color: T.red, fontFamily: "'JetBrains Mono', monospace", textAlign: "right" }}>{pct.toFixed(0)}%</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ReporteRegional({ deals }) {
+  const porUbicacion = {};
+  deals.forEach(d => {
+    porUbicacion[d.ubicacion] = (porUbicacion[d.ubicacion] || 0) + d.activo.monto;
+  });
+  const ubicEntries = Object.entries(porUbicacion).sort((a, b) => b[1] - a[1]);
+  const maxUbic = ubicEntries[0]?.[1] || 1;
+
+  const porCategoria = {};
+  deals.forEach(d => {
+    if (!porCategoria[d.activo.cat]) porCategoria[d.activo.cat] = { count: 0, monto: 0 };
+    porCategoria[d.activo.cat].count += 1;
+    porCategoria[d.activo.cat].monto += d.activo.monto;
+  });
+  const totalMonto = Object.values(porCategoria).reduce((s, c) => s + c.monto, 0) || 1;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <div style={opCard}>
+        <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: "0 0 14px" }}>Cartera por ubicación geográfica</h3>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {ubicEntries.map(([ubic, monto], i) => (
+            <div key={ubic} style={{ display: "grid", gridTemplateColumns: "30px minmax(0, 1.2fr) minmax(0, 1.5fr) 100px", gap: 12, alignItems: "center" }}>
+              <span style={{ width: 24, height: 24, borderRadius: "50%", background: T.surfaceAlt, fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", color: T.textSecondary }}>{i + 1}</span>
+              <span style={{ fontSize: 12, fontWeight: 600, color: T.text }}>{ubic}</span>
+              <div style={{ height: 6, borderRadius: 3, background: T.surfaceAlt, overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${(monto / maxUbic) * 100}%`, background: T.navy, borderRadius: 3 }} />
+              </div>
+              <span style={{ fontSize: 11, color: T.text, fontFamily: "'JetBrains Mono', monospace", textAlign: "right", fontWeight: 700 }}>{fmtShort(monto)}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div style={opCard}>
+        <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: "0 0 14px" }}>Mix por tipo de activo</h3>
+        <div style={{ display: "grid", gridTemplateColumns: "1.6fr 60px 110px 60px", gap: 8, fontSize: 11 }}>
+          {["Categoría", "Operaciones", "Monto", "%"].map(h => (
+            <span key={h} style={{ fontSize: 9, fontWeight: 800, color: T.textTertiary, textTransform: "uppercase", letterSpacing: 0.7, padding: "0 0 8px", borderBottom: `1px solid ${T.border}` }}>{h}</span>
+          ))}
+          {Object.entries(porCategoria).sort((a, b) => b[1].monto - a[1].monto).map(([cat, v]) => (
+            <React.Fragment key={cat}>
+              <span style={{ fontWeight: 600, color: T.text, padding: "9px 0", borderBottom: `1px solid ${T.borderLight}` }}>{cat}</span>
+              <span style={{ padding: "9px 0", borderBottom: `1px solid ${T.borderLight}`, fontFamily: "'JetBrains Mono', monospace" }}>{v.count}</span>
+              <span style={{ padding: "9px 0", borderBottom: `1px solid ${T.borderLight}`, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: T.navy }}>{fmtShort(v.monto)}</span>
+              <span style={{ padding: "9px 0", borderBottom: `1px solid ${T.borderLight}`, fontFamily: "'JetBrains Mono', monospace", color: T.blue, fontWeight: 700 }}>{((v.monto / totalMonto) * 100).toFixed(0)}%</span>
+            </React.Fragment>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ReporteTrimestre({ deals }) {
+  const ganadas = deals.filter(d => d.etapa === "Ganada");
+  const totalContratos = ganadas.length;
+  const totalMonto = ganadas.reduce((s, d) => s + d.activo.monto, 0);
+  const ticketProm = totalContratos > 0 ? totalMonto / totalContratos : 0;
+
+  const meses = [
+    { label: "Enero 2026", m: 0 },
+    { label: "Febrero 2026", m: 1 },
+    { label: "Marzo 2026", m: 2 },
+    { label: "Abril 2026", m: 3 },
+  ];
+  const detalle = meses.map(({ label, m }) => {
+    const ds = ganadas.filter(d => d.exp.cierre && new Date(d.exp.cierre).getMonth() === m && new Date(d.exp.cierre).getFullYear() === 2026);
+    const monto = ds.reduce((s, d) => s + d.activo.monto, 0);
+    return { label, count: ds.length, monto, ticket: ds.length > 0 ? monto / ds.length : 0 };
+  });
+
+  const META_ANUAL_MONTO = 130000000;
+  const META_ANUAL_CONTRATOS = 88;
+  const META_NUEVOS_CLIENTES = 60;
+  const nuevosClientes = new Set(deals.map(d => d.empresa)).size;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
+        <OpKpi icon="check_circle" label="Contratos firmados" value={totalContratos.toString()} sub="Ciclo actual" accent={T.green} />
+        <OpKpi icon="paid" label="Monto cerrado" value={fmtShort(totalMonto)} sub="MXN equivalente" accent={T.navy} />
+        <OpKpi icon="payments" label="Ticket promedio" value={fmtShort(ticketProm)} accent={T.blue} />
+      </div>
+
+      <div style={opCard}>
+        <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: "0 0 14px" }}>Detalle por mes de cierre</h3>
+        <div style={{ display: "grid", gridTemplateColumns: "1.5fr 80px 140px 120px", gap: 8, fontSize: 11 }}>
+          {["Mes", "Contratos", "Monto", "Ticket prom."].map(h => (
+            <span key={h} style={{ fontSize: 9, fontWeight: 800, color: T.textTertiary, textTransform: "uppercase", letterSpacing: 0.7, padding: "0 0 8px", borderBottom: `1px solid ${T.border}` }}>{h}</span>
+          ))}
+          {detalle.map(m => (
+            <React.Fragment key={m.label}>
+              <span style={{ padding: "10px 0", borderBottom: `1px solid ${T.borderLight}`, color: T.text, fontWeight: 600 }}>{m.label}</span>
+              <span style={{ padding: "10px 0", borderBottom: `1px solid ${T.borderLight}`, fontFamily: "'JetBrains Mono', monospace" }}>{m.count}</span>
+              <span style={{ padding: "10px 0", borderBottom: `1px solid ${T.borderLight}`, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: T.navy }}>{fmtShort(m.monto)}</span>
+              <span style={{ padding: "10px 0", borderBottom: `1px solid ${T.borderLight}`, fontFamily: "'JetBrains Mono', monospace", color: T.textSecondary }}>{m.count > 0 ? fmtShort(m.ticket) : "—"}</span>
+            </React.Fragment>
+          ))}
+          <span style={{ padding: "12px 0", color: T.green, fontWeight: 800, textTransform: "uppercase", letterSpacing: 0.5, fontSize: 11 }}>Total acumulado</span>
+          <span style={{ padding: "12px 0", fontFamily: "'JetBrains Mono', monospace", fontWeight: 800, color: T.green }}>{totalContratos}</span>
+          <span style={{ padding: "12px 0", fontFamily: "'JetBrains Mono', monospace", fontWeight: 800, color: T.green }}>{fmtShort(totalMonto)}</span>
+          <span style={{ padding: "12px 0", fontFamily: "'JetBrains Mono', monospace", fontWeight: 800, color: T.green }}>{fmtShort(ticketProm)}</span>
+        </div>
+      </div>
+
+      <div style={opCard}>
+        <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: "0 0 14px" }}>Comparativo vs meta anual</h3>
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          {[
+            { label: "Monto colocado", actual: totalMonto, meta: META_ANUAL_MONTO, fmt: fmtShort },
+            { label: "Contratos firmados", actual: totalContratos, meta: META_ANUAL_CONTRATOS, fmt: n => n },
+            { label: "Clientes únicos", actual: nuevosClientes, meta: META_NUEVOS_CLIENTES, fmt: n => n },
+          ].map(row => {
+            const pct = (row.actual / row.meta) * 100;
+            return (
+              <div key={row.label}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 12 }}>
+                  <span style={{ color: T.textSecondary, fontWeight: 600 }}>{row.label}</span>
+                  <span style={{ color: T.navy, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>{row.fmt(row.actual)} / {row.fmt(row.meta)} <span style={{ color: pct >= 25 ? T.green : T.amber, marginLeft: 8 }}>{pct.toFixed(0)}%</span></span>
+                </div>
+                <div style={{ height: 8, borderRadius: 4, background: T.surfaceAlt, overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${Math.min(pct, 100)}%`, background: pct >= 25 ? T.green : pct >= 15 ? T.amber : T.red, borderRadius: 4 }} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════
+// CRM — BITÁCORA GLOBAL
+// ═══════════════════════════════════════════════
+function CrmBitacoraSection({ deals, activities, onAddActivity }) {
+  const [filterEj, setFilterEj] = useState("todos");
+  const [filterTipo, setFilterTipo] = useState("todos");
+  const [search, setSearch] = useState("");
+  const [showForm, setShowForm] = useState(false);
+  const [actForm, setActForm] = useState({ dealId: deals[0]?.id || "", fecha: new Date().toISOString().slice(0, 10), tipo: "Llamada", resumen: "", siguiente: "" });
+
+  const tipos = [...new Set([...activities.map(a => a.tipo), "Llamada", "Reunión", "Zoom", "Email", "Visita", "WhatsApp"])];
+  const filtered = activities.filter(a => {
+    if (filterEj !== "todos" && a.ejecutivo !== filterEj) return false;
+    if (filterTipo !== "todos" && a.tipo !== filterTipo) return false;
+    if (search) {
+      const q = search.toLowerCase();
+      const deal = deals.find(d => d.id === a.dealId);
+      const empresa = deal?.empresa.toLowerCase() || "";
+      if (!a.resumen.toLowerCase().includes(q) && !empresa.includes(q)) return false;
+    }
+    return true;
+  }).sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+
+  const submitForm = () => {
+    if (!actForm.resumen.trim() || !actForm.dealId) return;
+    const deal = deals.find(d => d.id === actForm.dealId);
+    onAddActivity({ dealId: actForm.dealId, fecha: actForm.fecha, ejecutivo: deal?.ejecutivo || CRM_EJECUTIVOS[0], tipo: actForm.tipo, resumen: actForm.resumen.trim(), siguiente: actForm.siguiente.trim() || "—" });
+    setActForm({ dealId: deals[0]?.id || "", fecha: new Date().toISOString().slice(0, 10), tipo: "Llamada", resumen: "", siguiente: "" });
+    setShowForm(false);
+  };
+
+  const tipoColors = {
+    "Llamada": { bg: T.blueLight, color: T.blue },
+    "Reunión": { bg: T.greenLight, color: T.green },
+    "Zoom": { bg: T.purpleLight, color: T.purple },
+    "Email": { bg: T.amberLight, color: T.amber },
+    "Visita": { bg: T.redLight, color: T.red },
+    "WhatsApp": { bg: T.greenLight, color: T.green },
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16, animation: "fadeUp .5s ease" }}>
+      <div style={{ ...opCard, padding: 16 }}>
+        <div style={{ fontSize: 11, fontWeight: 800, color: T.textTertiary, letterSpacing: 1, textTransform: "uppercase", marginBottom: 10 }}>Filtros</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
+          <div>
+            <label style={lbl}>Buscar</label>
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Empresa o resumen..." style={inp} />
+          </div>
+          <div>
+            <label style={lbl}>Ejecutivo</label>
+            <select value={filterEj} onChange={e => setFilterEj(e.target.value)} style={inp}>
+              <option value="todos">Todos</option>
+              {CRM_EJECUTIVOS.map(ej => <option key={ej} value={ej}>{ej}</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={lbl}>Tipo de actividad</label>
+            <select value={filterTipo} onChange={e => setFilterTipo(e.target.value)} style={inp}>
+              <option value="todos">Todos</option>
+              {tipos.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span style={{ fontSize: 11, color: T.textTertiary, fontWeight: 700, letterSpacing: 0.8, textTransform: "uppercase" }}>{filtered.length} actividades</span>
+        <button onClick={() => setShowForm(!showForm)}
+          style={{ padding: "9px 16px", background: showForm ? T.surfaceAlt : T.navy, color: showForm ? T.text : "#fff", border: `1px solid ${showForm ? T.border : T.navy}`, borderRadius: T.radiusSm, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6 }}>
+          <span className="material-symbols-outlined" style={{ fontSize: 16 }}>{showForm ? "close" : "add"}</span>
+          {showForm ? "Cancelar" : "Registrar actividad"}
+        </button>
+      </div>
+
+      {showForm && (
+        <div style={{ ...opCard, padding: 16, background: T.blueLight, border: `1px solid ${T.blue}30` }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10, marginBottom: 10 }}>
+            <div>
+              <label style={lbl}>Lead</label>
+              <select value={actForm.dealId} onChange={e => setActForm({ ...actForm, dealId: e.target.value })} style={inp}>
+                {deals.map(d => <option key={d.id} value={d.id}>{d.empresa}</option>)}
+              </select>
+            </div>
+            <div>
+              <label style={lbl}>Fecha</label>
+              <input type="date" value={actForm.fecha} onChange={e => setActForm({ ...actForm, fecha: e.target.value })} style={inp} />
+            </div>
+            <div>
+              <label style={lbl}>Tipo</label>
+              <select value={actForm.tipo} onChange={e => setActForm({ ...actForm, tipo: e.target.value })} style={inp}>
+                {["Llamada", "Reunión", "Zoom", "Email", "Visita", "WhatsApp"].map(t => <option key={t}>{t}</option>)}
+              </select>
+            </div>
+          </div>
+          <div style={{ marginBottom: 10 }}>
+            <label style={lbl}>Resumen</label>
+            <textarea rows={2} value={actForm.resumen} onChange={e => setActForm({ ...actForm, resumen: e.target.value })} placeholder="Resultado de la actividad..." style={{ ...inp, resize: "vertical", minHeight: 60 }} />
+          </div>
+          <div style={{ marginBottom: 10 }}>
+            <label style={lbl}>Siguiente paso</label>
+            <input value={actForm.siguiente} onChange={e => setActForm({ ...actForm, siguiente: e.target.value })} placeholder="Ej. Follow-up el viernes" style={inp} />
+          </div>
+          <button onClick={submitForm} disabled={!actForm.resumen.trim() || !actForm.dealId}
+            style={{ padding: "9px 16px", background: actForm.resumen.trim() ? T.blue : T.border, color: "#fff", border: "none", borderRadius: T.radiusSm, fontSize: 12, fontWeight: 700, cursor: actForm.resumen.trim() ? "pointer" : "not-allowed", fontFamily: "inherit" }}>
+            Guardar actividad
+          </button>
+        </div>
+      )}
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {filtered.length === 0 && <div style={{ padding: 30, textAlign: "center", color: T.textTertiary, fontSize: 13 }}>Sin actividades que coincidan</div>}
+        {filtered.map(a => {
+          const deal = deals.find(d => d.id === a.dealId);
+          const tc = tipoColors[a.tipo] || { bg: T.surfaceAlt, color: T.textSecondary };
+          return (
+            <div key={a.id} style={{ ...opCard, padding: "14px 18px", borderLeft: `3px solid ${tc.color}` }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 6 }}>
+                <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, background: tc.bg, color: tc.color, fontWeight: 800, textTransform: "uppercase", letterSpacing: 0.5 }}>{a.tipo}</span>
+                <span style={{ fontSize: 11, color: T.textTertiary, fontFamily: "'JetBrains Mono', monospace" }}>{a.fecha}</span>
+                <span style={{ fontSize: 11, color: T.textSecondary }}>· {a.ejecutivo}</span>
+                {deal && <span style={{ fontSize: 11, fontWeight: 700, color: T.navy, marginLeft: "auto" }}>{deal.empresa}</span>}
+              </div>
+              <div style={{ fontSize: 13, color: T.text, lineHeight: 1.5 }}>{a.resumen}</div>
+              {a.siguiente && a.siguiente !== "—" && (
+                <div style={{ fontSize: 11, color: T.green, marginTop: 6, fontWeight: 600 }}>→ Siguiente: {a.siguiente}</div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════
+// RIESGOS — DATA & HELPERS
+// ═══════════════════════════════════════════════
+const EMPRESA_PERFIL = {
+  "Manufactura":   { antecedentes: "Empresa con presencia consolidada en el sector industrial mexicano. Opera bajo certificaciones ISO 9001 y cuenta con cadena de suministro establecida con clientes Tier 1.", instalaciones: "Planta principal con 25,000 m² techados, líneas automatizadas y áreas certificadas para exportación.", capacidad: "1,200 ton/mes" },
+  "Construcción":  { antecedentes: "Constructora con portafolio de obra civil, infraestructura vial y desarrollos inmobiliarios. Contratos vigentes con dependencias federales y municipales.", instalaciones: "Oficinas centrales + flota de equipo pesado en 4 frentes activos.", capacidad: "850 mil m² ejecutados/año" },
+  "Alimentos":     { antecedentes: "Operación de procesamiento y empaque con distribución nacional. Cuenta con certificación HACCP y FSSC 22000.", instalaciones: "Planta refrigerada de 12,000 m² con sala blanca y bodega de producto terminado.", capacidad: "180 ton/mes" },
+  "Logística":     { antecedentes: "Operador logístico con flota especializada en cargas refrigeradas y secas. Cobertura nacional con cross-dock en zonas estratégicas.", instalaciones: "Patio de maniobras + taller propio + sistema TMS en operación.", capacidad: "+9,000 viajes/año" },
+  "Energía":       { antecedentes: "Empresa especializada en proyectos de generación distribuida y eficiencia energética. Cartera de PPAs vigentes con clientes industriales.", instalaciones: "Centro de operaciones SCADA + bodegas técnicas regionales.", capacidad: "32 MW instalados" },
+  "Textil":        { antecedentes: "Productor textil con orientación exportadora. Atiende marcas nacionales y maquila para Estados Unidos.", instalaciones: "Naves de tejido y acabado, área de tintorería propia.", capacidad: "1.8 M m² tela/año" },
+  "Salud":         { antecedentes: "Distribuidor farmacéutico con cobertura B2B en clínicas, hospitales y farmacias regionales. Cumple con la normativa COFEPRIS.", instalaciones: "Centro de distribución refrigerado + flota controlada.", capacidad: "240 mil unidades/mes" },
+  "Minería":       { antecedentes: "Operación minera de cobre en yacimiento activo. Reservas probadas y permisos ambientales vigentes.", instalaciones: "Mina a cielo abierto + planta de molienda + presa de jales.", capacidad: "8,500 ton mineral/día" },
+  "Plásticos":     { antecedentes: "Transformador de plástico inyectado con piezas técnicas para automotriz y línea blanca.", instalaciones: "Planta con 38 inyectoras y celda de ensamble.", capacidad: "9,200 ton/año" },
+  "Agroindustria": { antecedentes: "Procesador agroindustrial con integración campo-planta. Operación contracíclica entre granos y oleaginosas.", instalaciones: "Planta procesadora + silos de almacenamiento + báscula propia.", capacidad: "45,000 ton/ciclo" },
+  "Tecnología":    { antecedentes: "Integrador de soluciones de TI y servicios gestionados. Maneja data center propio Tier III y contratos plurianuales.", instalaciones: "Data center 1,200 m² + NOC 24/7.", capacidad: "+2,400 racks gestionados" },
+};
+
+const empresaFor = (c) => {
+  const map = { "Manufactura":"Manufactura", "Construcción":"Construcción", "Alimentos":"Alimentos", "Logística":"Logística", "Energía":"Energía", "Textil":"Textil", "Salud":"Salud", "Minería":"Minería", "Plásticos":"Plásticos", "Agroindustria":"Agroindustria", "Tecnología":"Tecnología" };
+  return EMPRESA_PERFIL[map[c.actividad] || "Manufactura"];
+};
+
+const SERVICIOS_BY_ACT = {
+  "Manufactura":   ["Extrusión de aluminio", "Fabricación de perfiles", "Acabado anodizado", "Maquila a especificación"],
+  "Construcción":  ["Obra civil", "Infraestructura vial", "Desarrollos inmobiliarios", "Concretos y acabados"],
+  "Alimentos":     ["Procesamiento de alimentos", "Empaque al vacío", "Distribución refrigerada"],
+  "Logística":     ["Carga refrigerada", "Carga seca", "Cross-dock", "Almacenaje en tránsito"],
+  "Energía":       ["Diseño solar industrial", "Construcción de plantas", "O&M", "PPAs corporativos"],
+  "Textil":        ["Tejido plano", "Acabado y tintura", "Maquila exportación"],
+  "Salud":         ["Distribución farmacéutica", "Cadena de frío", "Logística regulada"],
+  "Minería":       ["Extracción", "Concentración", "Comercialización de cobre"],
+  "Plásticos":     ["Inyección técnica", "Ensamble", "Diseño de moldes"],
+  "Agroindustria": ["Acopio de granos", "Procesamiento", "Almacenamiento"],
+  "Tecnología":    ["Servicios gestionados", "Cloud privado", "Data center colocation"],
+};
+
+const generarConclusionesIA = (c) => {
+  const score = c.calificacion.score;
+  const cobertura = c.estadoCuenta.cobertura;
+  const ventas = c.financieros.ventas;
+  const ebitda = c.financieros.ebitda;
+  const tendVentas = ventas[ventas.length - 1].v >= ventas[0].v ? "creciente" : "decreciente";
+  const margen = ebitda[ebitda.length - 1].v / ventas[ventas.length - 1].v;
+
+  const fortalezas = [];
+  const riesgos = [];
+  const recomendaciones = [];
+
+  if (score >= 700) fortalezas.push({ titulo: "Calificación crediticia sólida", texto: `Score Ekatena de ${score} ubica al cliente en banda de riesgo controlado.` });
+  if (cobertura >= 10) fortalezas.push({ titulo: "Cobertura de flujo robusta", texto: `Saldo promedio cubre ${cobertura.toFixed(1)}× la renta mensual, lo que deja holgura ante shocks de corto plazo.` });
+  if (tendVentas === "creciente") fortalezas.push({ titulo: "Tendencia de ventas positiva", texto: "El cliente muestra crecimiento sostenido en sus últimas ventanas reportadas." });
+  if (margen >= 0.10) fortalezas.push({ titulo: "Margen operativo saludable", texto: `EBITDA / Ventas estimado en ${(margen*100).toFixed(1)}% ubicado por encima del promedio sectorial.` });
+
+  if (score < 700) riesgos.push({ titulo: "Score por debajo del umbral preferente", texto: `Calificación de ${score} requiere monitoreo trimestral y validación de garantías.` });
+  if (cobertura < 8) riesgos.push({ titulo: "Cobertura ajustada", texto: `Cobertura de ${cobertura.toFixed(1)}× deja poco margen ante caída de ingresos. Evaluar fortalecer aval.` });
+  if (tendVentas === "decreciente") riesgos.push({ titulo: "Ventas en contracción", texto: "La curva de ventas presenta deterioro en el último ciclo; verificar concentración de clientes." });
+  riesgos.push({ titulo: "Concentración de pasivos", texto: `${c.pasivosFinancieros.principales.length} acreedores principales con ${fmtShort(c.pasivosFinancieros.totalSaldo)} en saldo. Validar covenants vigentes.` });
+
+  recomendaciones.push({ titulo: "Refresh financiero", texto: "Solicitar EEFF a corte ≤ 90 días y carta de buró actualizada antes del próximo desembolso." });
+  if (cobertura < 10) recomendaciones.push({ titulo: "Reforzar garantías", texto: "Considerar GPS y aval solidario adicional dado el perfil de cobertura." });
+  recomendaciones.push({ titulo: "Monitoreo de sector", texto: `Vigilar indicadores macro de ${c.actividad}: precio de insumos, demanda y FX dado que afecta al activo financiado.` });
+  if (margen < 0.10) recomendaciones.push({ titulo: "Análisis de eficiencia", texto: "Margen EBITDA por debajo del umbral; profundizar en estructura de costos en próxima revisión." });
+
+  return { fortalezas, riesgos, recomendaciones, score, cobertura, margen, tendVentas };
+};
+
+// ═══════════════════════════════════════════════
+// RIESGOS — PANORAMA
+// ═══════════════════════════════════════════════
+function RiesgosPanoramaSection({ onSelectClient }) {
+  const totalExposicion = CLIENTS.reduce((s, c) => s + c.saldoPendiente, 0);
+  const avgScore = Math.round(CLIENTS.reduce((s, c) => s + c.calificacion.score, 0) / CLIENTS.length);
+  const altoRiesgo = CLIENTS.filter(c => c.calificacion.score < 650).length;
+  const proximosPago = CLIENTS.filter(c => c.diasParaPago <= 7).length;
+
+  // Distribución por banda de score
+  const bandas = [
+    { label: "Excelente (≥750)", min: 750, max: 1000, color: T.green },
+    { label: "Bueno (700–749)", min: 700, max: 749, color: T.blue },
+    { label: "Aceptable (650–699)", min: 650, max: 699, color: T.amber },
+    { label: "Riesgoso (<650)", min: 0, max: 649, color: T.red },
+  ];
+  const bandaData = bandas.map(b => ({ ...b, count: CLIENTS.filter(c => c.calificacion.score >= b.min && c.calificacion.score <= b.max).length }));
+
+  // Check breakdown
+  const checkStats = {};
+  CLIENTS.forEach(c => c.calificacion.checks.forEach(ch => {
+    checkStats[ch.key] = checkStats[ch.key] || { ok: 0, warning: 0, info: 0 };
+    checkStats[ch.key][ch.status] = (checkStats[ch.key][ch.status] || 0) + 1;
+  }));
+
+  // Top exposiciones
+  const topExposicion = [...CLIENTS].sort((a, b) => b.saldoPendiente - a.saldoPendiente).slice(0, 5);
+
+  // Alertas combinadas
+  const alertas = [];
+  CLIENTS.forEach(c => {
+    if (c.calificacion.score < 650) alertas.push({ tipo: "score", color: T.red, cliente: c, texto: `Score ${c.calificacion.score} bajo umbral preferente`, severidad: 3 });
+    if (c.estadoCuenta.cobertura < 6) alertas.push({ tipo: "cobertura", color: T.amber, cliente: c, texto: `Cobertura ${c.estadoCuenta.cobertura.toFixed(1)}× ajustada`, severidad: 2 });
+    if (c.diasParaPago <= 3) alertas.push({ tipo: "pago", color: "#EA580C", cliente: c, texto: `Próximo pago en ${c.diasParaPago}d`, severidad: 2 });
+    const warningChecks = c.calificacion.checks.filter(ch => ch.status === "warning").length;
+    if (warningChecks >= 2) alertas.push({ tipo: "checks", color: T.amber, cliente: c, texto: `${warningChecks} alertas en calificación`, severidad: 2 });
+  });
+  alertas.sort((a, b) => b.severidad - a.severidad);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 18, animation: "fadeUp .5s ease" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
+        <OpKpi icon="account_balance_wallet" label="Exposición total" value={fmtShort(totalExposicion)} accent={T.navy} />
+        <OpKpi icon="speed" label="Score promedio" value={avgScore.toString()} accent={scoreColor(avgScore)} sub={`${CLIENTS.length} clientes`} />
+        <OpKpi icon="warning" label="Alto riesgo (<650)" value={altoRiesgo.toString()} accent={altoRiesgo > 0 ? T.red : T.green} />
+        <OpKpi icon="alarm" label="Pagos en ≤7 días" value={proximosPago.toString()} accent={proximosPago > 0 ? T.amber : T.green} />
+        <OpKpi icon="report" label="Alertas activas" value={alertas.length.toString()} accent={T.amber} />
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 14 }}>
+        <div style={opCard}>
+          <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: "0 0 14px" }}>Distribución de score</h3>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {bandaData.map(b => (
+              <div key={b.label}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4, fontSize: 11 }}>
+                  <span style={{ fontWeight: 600 }}>{b.label}</span>
+                  <span style={{ fontWeight: 800, color: b.color, fontFamily: "'JetBrains Mono', monospace" }}>{b.count}</span>
+                </div>
+                <div style={{ height: 8, borderRadius: 4, background: T.surfaceAlt, overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${(b.count / CLIENTS.length) * 100}%`, background: b.color, borderRadius: 4 }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div style={opCard}>
+          <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: "0 0 14px" }}>Salud por dimensión de calificación</h3>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {Object.entries(checkStats).map(([key, st]) => {
+              const total = (st.ok || 0) + (st.warning || 0) + (st.info || 0);
+              return (
+                <div key={key}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: T.navy, marginBottom: 6 }}>{key}</div>
+                  <StackedBar
+                    entries={[
+                      { label: "OK", value: st.ok || 0 },
+                      { label: "Warning", value: st.warning || 0 },
+                      { label: "Info", value: st.info || 0 },
+                    ]}
+                    palette={[T.green, T.amber, T.blue]}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div style={opCard}>
+          <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: "0 0 14px" }}>Top 5 exposiciones</h3>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {topExposicion.map(c => {
+              const sc = scoreColor(c.calificacion.score);
+              const pct = (c.saldoPendiente / totalExposicion) * 100;
+              return (
+                <button key={c.id} onClick={() => onSelectClient(c.id)} className="hover-row"
+                  style={{ display: "grid", gridTemplateColumns: "1.6fr 60px 70px 1fr", alignItems: "center", gap: 10, padding: 10, background: "transparent", border: `1px solid ${T.borderLight}`, borderRadius: T.radiusSm, cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: T.navy }}>{c.nombre}</span>
+                  <span style={{ fontSize: 11, fontWeight: 800, color: sc, fontFamily: "'JetBrains Mono', monospace", padding: "2px 6px", background: `${sc}14`, borderRadius: 3, textAlign: "center" }}>{c.calificacion.score}</span>
+                  <span style={{ fontSize: 11, color: T.text, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, textAlign: "right" }}>{fmtShort(c.saldoPendiente)}</span>
+                  <div style={{ height: 6, borderRadius: 3, background: T.surfaceAlt, overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${pct}%`, background: T.blue }} />
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div style={opCard}>
+          <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: "0 0 14px" }}>Alertas tempranas</h3>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 320, overflowY: "auto" }}>
+            {alertas.length === 0 && <div style={{ padding: 20, textAlign: "center", color: T.textTertiary, fontSize: 12 }}>Sin alertas activas</div>}
+            {alertas.map((a, i) => (
+              <button key={i} onClick={() => onSelectClient(a.cliente.id)} className="hover-row"
+                style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: "transparent", border: `1px solid ${T.borderLight}`, borderLeft: `3px solid ${a.color}`, borderRadius: T.radiusSm, cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: T.navy }}>{a.cliente.nombre}</div>
+                  <div style={{ fontSize: 10, color: T.textSecondary, marginTop: 2 }}>{a.texto}</div>
+                </div>
+                <span className="material-symbols-outlined" style={{ fontSize: 16, color: a.color }}>chevron_right</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════
+// RIESGOS — EXPEDIENTES
+// ═══════════════════════════════════════════════
+function RiesgosExpedientesSection({ onSelectClient }) {
+  const [search, setSearch] = useState("");
+  const [bandaFilter, setBandaFilter] = useState("todos");
+
+  const filtered = CLIENTS.filter(c => {
+    if (search) {
+      const q = search.toLowerCase();
+      if (!c.nombre.toLowerCase().includes(q) && !c.razonSocial.toLowerCase().includes(q) && !c.rfc.toLowerCase().includes(q)) return false;
+    }
+    if (bandaFilter === "alto") return c.calificacion.score < 650;
+    if (bandaFilter === "medio") return c.calificacion.score >= 650 && c.calificacion.score < 750;
+    if (bandaFilter === "bajo") return c.calificacion.score >= 750;
+    return true;
+  }).sort((a, b) => a.calificacion.score - b.calificacion.score);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 18, animation: "fadeUp .5s ease" }}>
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar cliente, razón social o RFC..."
+          style={{ flex: "1 1 280px", padding: "10px 14px", background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radiusSm, fontSize: 13, fontFamily: "inherit", outline: "none" }} />
+        <div style={{ display: "flex", gap: 4, background: T.surfaceAlt, borderRadius: T.radiusSm, padding: 4 }}>
+          {[
+            { id: "todos", label: "Todos" },
+            { id: "alto", label: "Alto riesgo" },
+            { id: "medio", label: "Medio" },
+            { id: "bajo", label: "Bajo riesgo" },
+          ].map(b => (
+            <button key={b.id} onClick={() => setBandaFilter(b.id)}
+              style={{ padding: "8px 14px", border: "none", borderRadius: 5, background: bandaFilter === b.id ? T.surface : "transparent", color: bandaFilter === b.id ? T.navy : T.textSecondary, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", boxShadow: bandaFilter === b.id ? T.shadow : "none" }}>
+              {b.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 14 }}>
+        {filtered.length === 0 && <div style={{ padding: 40, textAlign: "center", color: T.textTertiary, fontSize: 13 }}>Sin resultados</div>}
+        {filtered.map(c => {
+          const sc = scoreColor(c.calificacion.score);
+          const warningChecks = c.calificacion.checks.filter(ch => ch.status === "warning").length;
+          const okChecks = c.calificacion.checks.filter(ch => ch.status === "ok").length;
+          const totalChecks = c.calificacion.checks.length;
+          const pctOk = (okChecks / totalChecks) * 100;
+          return (
+            <button key={c.id} onClick={() => onSelectClient(c.id)} className="hover-lift"
+              style={{ ...opCard, padding: 0, cursor: "pointer", textAlign: "left", border: `1px solid ${T.border}`, fontFamily: "inherit", overflow: "hidden" }}>
+              <div style={{ padding: "16px 18px 14px", borderBottom: `1px solid ${T.borderLight}` }}>
+                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: T.navy }}>{c.nombre}</div>
+                    <div style={{ fontSize: 10, color: T.textTertiary, marginTop: 2, fontFamily: "'JetBrains Mono', monospace" }}>{c.rfc}</div>
+                  </div>
+                  <div style={{ width: 56, height: 56, borderRadius: 10, background: `${sc}14`, color: sc, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <span style={{ fontSize: 16, fontWeight: 900, fontFamily: "'JetBrains Mono', monospace", lineHeight: 1 }}>{c.calificacion.score}</span>
+                    <span style={{ fontSize: 8, fontWeight: 800, marginTop: 2, letterSpacing: 0.5 }}>{c.calificacion.riesgo.toUpperCase()}</span>
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 6, marginTop: 12, flexWrap: "wrap" }}>
+                  <span style={{ fontSize: 9, padding: "2px 7px", borderRadius: 3, background: T.surfaceAlt, color: T.textSecondary, fontWeight: 700 }}>{c.actividad}</span>
+                  {warningChecks > 0 && <span style={{ fontSize: 9, padding: "2px 7px", borderRadius: 3, background: T.amberLight, color: T.amber, fontWeight: 700 }}>⚠ {warningChecks} alertas</span>}
+                  {c.diasParaPago <= 7 && <span style={{ fontSize: 9, padding: "2px 7px", borderRadius: 3, background: "#FFEDD5", color: "#EA580C", fontWeight: 700 }}>Pago en {c.diasParaPago}d</span>}
+                </div>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, padding: "14px 18px", borderBottom: `1px solid ${T.borderLight}` }}>
+                <div>
+                  <div style={{ fontSize: 9, color: T.textTertiary, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}>Saldo pendiente</div>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: T.navy, fontFamily: "'JetBrains Mono', monospace", marginTop: 2 }}>{fmtShort(c.saldoPendiente)}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 9, color: T.textTertiary, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}>Cobertura</div>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: c.estadoCuenta.cobertura >= 8 ? T.green : T.amber, fontFamily: "'JetBrains Mono', monospace", marginTop: 2 }}>{c.estadoCuenta.cobertura.toFixed(1)}×</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 9, color: T.textTertiary, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}>Buró</div>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: T.navy, fontFamily: "'JetBrains Mono', monospace", marginTop: 2 }}>{c.buroCredito.puntaje} <span style={{ fontSize: 10, color: T.textTertiary }}>· {c.buroCredito.gradoRiesgo}</span></div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 9, color: T.textTertiary, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}>Pasivos</div>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: T.navy, fontFamily: "'JetBrains Mono', monospace", marginTop: 2 }}>{fmtShort(c.pasivosFinancieros.totalSaldo)}</div>
+                </div>
+              </div>
+
+              <div style={{ padding: "12px 18px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4, fontSize: 10 }}>
+                  <span style={{ color: T.textTertiary, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}>Calificación · {okChecks}/{totalChecks} OK</span>
+                  <span style={{ color: T.navy, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>{pctOk.toFixed(0)}%</span>
+                </div>
+                <div style={{ height: 5, borderRadius: 3, background: T.surfaceAlt, overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${pctOk}%`, background: pctOk >= 80 ? T.green : pctOk >= 60 ? T.amber : T.red, borderRadius: 3 }} />
+                </div>
+                <div style={{ marginTop: 12, fontSize: 10, color: T.textTertiary, fontWeight: 700, letterSpacing: 0.8, textTransform: "uppercase" }}>Abrir expediente →</div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════
+// RIESGOS — ANÁLISIS IA
+// ═══════════════════════════════════════════════
+function RiesgosAnalisisSection() {
+  const [clientId, setClientId] = useState(CLIENTS[0].id);
+  const [running, setRunning] = useState(false);
+  const [result, setResult] = useState(null);
+  const c = CLIENTS.find(x => x.id === clientId);
+
+  const ejecutar = () => {
+    setRunning(true);
+    setTimeout(() => {
+      setResult(generarConclusionesIA(c));
+      setRunning(false);
+    }, 900);
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 18, animation: "fadeUp .5s ease" }}>
+      <div style={{ ...opCard, padding: 0, overflow: "hidden" }}>
+        <div style={{ padding: "16px 20px", background: `linear-gradient(135deg, ${T.blue}10, ${T.green}10)`, borderBottom: `1px solid ${T.borderLight}`, display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ width: 40, height: 40, borderRadius: 10, background: `linear-gradient(135deg, ${T.blue}, ${T.green})`, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <span className="material-symbols-outlined">psychology</span>
+          </div>
+          <div>
+            <h3 style={{ fontSize: 15, fontWeight: 800, color: T.navy, margin: 0 }}>Análisis cruzado con IA</h3>
+            <p style={{ fontSize: 11, color: T.textSecondary, margin: "2px 0 0" }}>Cruza estados financieros, historial de pagos y dinámica del sector para generar recomendaciones para el equipo de Riesgos.</p>
+          </div>
+        </div>
+        <div style={{ padding: 20, display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-end" }}>
+          <div style={{ flex: "1 1 240px" }}>
+            <label style={lbl}>Cliente a analizar</label>
+            <select value={clientId} onChange={e => { setClientId(e.target.value); setResult(null); }} style={inp}>
+              {CLIENTS.map(cl => <option key={cl.id} value={cl.id}>{cl.nombre} — {cl.actividad}</option>)}
+            </select>
+          </div>
+          <button onClick={ejecutar} disabled={running}
+            style={{ padding: "11px 22px", background: `linear-gradient(135deg, ${T.blue}, ${T.green})`, color: "#fff", border: "none", borderRadius: T.radiusSm, fontSize: 13, fontWeight: 700, cursor: running ? "wait" : "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 8 }}>
+            <span className="material-symbols-outlined" style={{ fontSize: 16 }}>{running ? "progress_activity" : "psychology"}</span>
+            {running ? "Procesando..." : "Generar análisis"}
+          </button>
+        </div>
+      </div>
+
+      {result && (
+        <>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
+            <OpKpi icon="speed" label="Score Ekatena" value={result.score.toString()} accent={scoreColor(result.score)} />
+            <OpKpi icon="account_balance" label="Cobertura" value={`${result.cobertura.toFixed(1)}×`} accent={result.cobertura >= 8 ? T.green : T.amber} />
+            <OpKpi icon="trending_up" label="Margen EBITDA" value={`${(result.margen * 100).toFixed(1)}%`} accent={result.margen >= 0.10 ? T.green : T.amber} />
+            <OpKpi icon={result.tendVentas === "creciente" ? "north_east" : "south_east"} label="Tendencia ventas" value={result.tendVentas} accent={result.tendVentas === "creciente" ? T.green : T.red} />
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 14 }}>
+            <ConclusionsBlock title="Fortalezas" icon="check_circle" color={T.green} items={result.fortalezas} />
+            <ConclusionsBlock title="Riesgos detectados" icon="warning" color={T.red} items={result.riesgos} />
+            <ConclusionsBlock title="Recomendaciones" icon="lightbulb" color={T.purple} items={result.recomendaciones} />
+          </div>
+
+          <div style={{ ...opCard, padding: 18, borderLeft: `4px solid ${T.blue}`, display: "flex", gap: 12 }}>
+            <span className="material-symbols-outlined" style={{ fontSize: 22, color: T.blue, flexShrink: 0 }}>info</span>
+            <div style={{ fontSize: 12, color: T.textSecondary, lineHeight: 1.6 }}>
+              <strong style={{ color: T.navy }}>Nota:</strong> Las recomendaciones se generan a partir de los datos cargados en el expediente del cliente. Para producir conclusiones más finas, se sugiere conectar la fuente original de estados financieros (mensual) y el reporte de buró actualizado en el módulo Operación → Drive.
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function ConclusionsBlock({ title, icon, color, items }) {
+  return (
+    <div style={opCard}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+        <span className="material-symbols-outlined" style={{ fontSize: 18, color }}>{icon}</span>
+        <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: 0 }}>{title}</h3>
+        <span style={{ fontSize: 10, color: T.textTertiary, fontFamily: "'JetBrains Mono', monospace" }}>· {items.length}</span>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {items.length === 0 && <div style={{ fontSize: 12, color: T.textTertiary, padding: 12, textAlign: "center" }}>Sin elementos detectados</div>}
+        {items.map((it, i) => (
+          <div key={i} style={{ padding: 12, background: T.surfaceAlt, borderRadius: T.radiusSm, borderLeft: `3px solid ${color}` }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: T.navy, marginBottom: 4 }}>{it.titulo}</div>
+            <div style={{ fontSize: 11, color: T.textSecondary, lineHeight: 1.5 }}>{it.texto}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════
+// DASHBOARD FINANCIERO — DATA
+// ═══════════════════════════════════════════════
+const DASH_FIN_TREND = [
+  { m: "May 25", ingresos: 28500, costoFond: 11400, opex: 6800, prov: 1200 },
+  { m: "Jun 25", ingresos: 29800, costoFond: 11900, opex: 6900, prov: 1100 },
+  { m: "Jul 25", ingresos: 31200, costoFond: 12500, opex: 7100, prov: 1300 },
+  { m: "Ago 25", ingresos: 30700, costoFond: 12300, opex: 7000, prov: 1400 },
+  { m: "Sep 25", ingresos: 32100, costoFond: 12850, opex: 7200, prov: 1250 },
+  { m: "Oct 25", ingresos: 33400, costoFond: 13360, opex: 7400, prov: 1100 },
+  { m: "Nov 25", ingresos: 34200, costoFond: 13680, opex: 7500, prov: 1350 },
+  { m: "Dic 25", ingresos: 36800, costoFond: 14720, opex: 8200, prov: 1500 },
+  { m: "Ene 26", ingresos: 33500, costoFond: 13400, opex: 7300, prov: 1280 },
+  { m: "Feb 26", ingresos: 34100, costoFond: 13640, opex: 7400, prov: 1200 },
+  { m: "Mar 26", ingresos: 35200, costoFond: 14080, opex: 7500, prov: 1100 },
+  { m: "Abr 26", ingresos: 35600, costoFond: 14240, opex: 7100, prov: 1300 },
+];
+
+const DASH_FIN_PNL = [
+  { label: "Ingresos por rentas", value: 27800, type: "in" },
+  { label: "Comisiones", value: 4200, type: "in" },
+  { label: "Intereses inversiones", value: 2100, type: "in" },
+  { label: "Otros ingresos", value: 1500, type: "in" },
+  { label: "TOTAL INGRESOS", value: 35600, type: "total" },
+  { label: "Costo de fondeo", value: -14240, type: "out" },
+  { label: "MARGEN FINANCIERO", value: 21360, type: "sub" },
+  { label: "Gastos operativos", value: -7100, type: "out" },
+  { label: "Provisiones / castigos", value: -1300, type: "out" },
+  { label: "EBITDA", value: 12960, type: "sub" },
+  { label: "Depreciación y amortización", value: -1180, type: "out" },
+  { label: "Impuestos (ISR)", value: -3534, type: "out" },
+  { label: "UTILIDAD NETA", value: 8246, type: "total" },
+];
+
+const DASH_FIN_INGRESOS = [
+  { label: "Rentas arrendamiento", value: 78 },
+  { label: "Comisiones apertura", value: 12 },
+  { label: "Intereses inversiones", value: 6 },
+  { label: "Otros (recuperaciones)", value: 4 },
+];
+
+const DASH_FIN_CARTERA_TREND = [
+  { m: "May 25", v: 1620 },
+  { m: "Jun 25", v: 1680 },
+  { m: "Jul 25", v: 1740 },
+  { m: "Ago 25", v: 1790 },
+  { m: "Sep 25", v: 1825 },
+  { m: "Oct 25", v: 1860 },
+  { m: "Nov 25", v: 1880 },
+  { m: "Dic 25", v: 1910 },
+  { m: "Ene 26", v: 1925 },
+  { m: "Feb 26", v: 1940 },
+  { m: "Mar 26", v: 1948 },
+  { m: "Abr 26", v: 1955 },
+];
+
+const DASH_FIN_BUDGET = [
+  { kpi: "Ingresos", actual: 138400, budget: 132000 },
+  { kpi: "Margen financiero", actual: 83040, budget: 79200 },
+  { kpi: "EBITDA", actual: 50320, budget: 48400 },
+  { kpi: "Utilidad neta", actual: 32100, budget: 30000 },
+  { kpi: "Cartera promedio", actual: 1942000, budget: 1900000 },
+];
+
+const DASH_FIN_SECTORES = [
+  { label: "Manufactura", value: 480 },
+  { label: "Construcción", value: 420 },
+  { label: "Transporte", value: 380 },
+  { label: "Energía", value: 285 },
+  { label: "Agroindustria", value: 175 },
+  { label: "Salud", value: 95 },
+  { label: "Tecnología", value: 80 },
+  { label: "Otros", value: 40 },
+];
+
+// ═══════════════════════════════════════════════
+// DASHBOARD FINANCIERO — UI HELPERS
+// ═══════════════════════════════════════════════
+function PnlCascade({ items }) {
+  const max = Math.max(...items.map(i => Math.abs(i.value)));
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+      {items.map((item, i) => {
+        const isTotal = item.type === "total";
+        const isSub = item.type === "sub";
+        const big = isTotal || isSub;
+        const color = item.type === "in" ? T.green : item.type === "out" ? T.red : item.type === "sub" ? T.blue : T.navy;
+        const bg = item.type === "in" ? T.greenLight : item.type === "out" ? T.redLight : item.type === "sub" ? T.blueLight : T.surfaceAlt;
+        const pct = (Math.abs(item.value) / max) * 100;
+        return (
+          <div key={i} style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.4fr) 110px minmax(0, 1.4fr)", gap: 12, alignItems: "center", padding: big ? "10px 12px" : "5px 12px", borderTop: big ? `1px solid ${T.border}` : "none", marginTop: big ? 4 : 0, background: isTotal ? bg : "transparent", borderRadius: isTotal ? T.radiusSm : 0 }}>
+            <span style={{ fontSize: big ? 13 : 11.5, fontWeight: big ? 800 : 500, color: big ? T.navy : T.text, letterSpacing: isTotal ? 0.4 : 0, textTransform: isTotal ? "uppercase" : "none" }}>{item.label}</span>
+            <span style={{ fontSize: big ? 14 : 12, fontWeight: 800, color, fontFamily: "'JetBrains Mono', monospace", textAlign: "right" }}>{item.value < 0 ? "-" : ""}{fmtShort(Math.abs(item.value) * 1000)}</span>
+            <div style={{ height: big ? 9 : 5, borderRadius: 3, background: T.surfaceAlt, overflow: "hidden" }}>
+              <div style={{ height: "100%", width: `${pct}%`, background: color, borderRadius: 3, transition: "width .8s ease" }} />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function GroupedBars({ data, series, height = 130, valueFormatter = (n) => fmtShort(n * 1000) }) {
+  const max = Math.max(...data.flatMap(d => series.map(s => d[s.key])));
+  return (
+    <div>
+      <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height, paddingBottom: 4 }}>
+        {data.map((d, i) => (
+          <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, minWidth: 0 }}>
+            <div style={{ display: "flex", gap: 2, height: "100%", alignItems: "flex-end", width: "100%", justifyContent: "center" }}>
+              {series.map(s => {
+                const h = (d[s.key] / max) * 100;
+                return <div key={s.key} title={`${s.label}: ${valueFormatter(d[s.key])}`} style={{ flex: 1, height: `${h}%`, background: s.color, borderRadius: "2px 2px 0 0", minHeight: 2, transition: "height .8s ease" }} />;
+              })}
+            </div>
+            <span style={{ fontSize: 9, color: T.textTertiary, whiteSpace: "nowrap" }}>{d.m || d.label}</span>
+          </div>
+        ))}
+      </div>
+      <div style={{ display: "flex", justifyContent: "center", gap: 14, marginTop: 8, flexWrap: "wrap" }}>
+        {series.map(s => (
+          <div key={s.key} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11 }}>
+            <span style={{ width: 10, height: 10, borderRadius: 2, background: s.color }} />
+            <span style={{ color: T.textSecondary }}>{s.label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AreaTrend({ data, color = T.blue, height = 90 }) {
+  const max = Math.max(...data.map(d => d.v));
+  const min = Math.min(...data.map(d => d.v));
+  const range = max - min || 1;
+  const w = 100 / Math.max(data.length - 1, 1);
+  const points = data.map((d, i) => `${i * w},${100 - ((d.v - min) / range) * 88 - 6}`).join(" ");
+  const areaPath = `0,100 ${points} 100,100`;
+  return (
+    <div style={{ position: "relative" }}>
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ width: "100%", height, display: "block" }}>
+        <polygon points={areaPath} fill={color} fillOpacity="0.15" />
+        <polyline points={points} fill="none" stroke={color} strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
+        {data.map((d, i) => (
+          <circle key={i} cx={i * w} cy={100 - ((d.v - min) / range) * 88 - 6} r="1.2" fill={color} vectorEffect="non-scaling-stroke" />
+        ))}
+      </svg>
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, color: T.textTertiary, marginTop: 4 }}>
+        <span>{data[0]?.m}</span>
+        <span>{data[data.length - 1]?.m}</span>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════
+// DASHBOARD FINANCIERO — SECTION
+// ═══════════════════════════════════════════════
+function DashboardFinancieroSection() {
+  const ytdMeses = 4; // Ene-Abr 2026
+  const ytd = DASH_FIN_TREND.slice(-ytdMeses).reduce((s, m) => ({
+    ingresos: s.ingresos + m.ingresos, costoFond: s.costoFond + m.costoFond, opex: s.opex + m.opex, prov: s.prov + m.prov,
+  }), { ingresos: 0, costoFond: 0, opex: 0, prov: 0 });
+  const margenFinPct = ((ytd.ingresos - ytd.costoFond) / ytd.ingresos) * 100;
+  const ebitdaYtd = ytd.ingresos - ytd.costoFond - ytd.opex - ytd.prov;
+  const ebitdaPct = (ebitdaYtd / ytd.ingresos) * 100;
+  const utilNeta = Math.round(ebitdaYtd * 0.65); // approx neto
+
+  const carteraActual = DASH_FIN_CARTERA_TREND[DASH_FIN_CARTERA_TREND.length - 1].v;
+  const carteraInicio = DASH_FIN_CARTERA_TREND[0].v;
+  const crecYoY = ((carteraActual - carteraInicio) / carteraInicio) * 100;
+
+  const npl = 2.8;
+  const cobertura = 142;
+  const roa = 4.2;
+  const roe = 14.6;
+  const eficiencia = (ytd.opex / (ytd.ingresos - ytd.costoFond)) * 100;
+
+  const palette = [T.blue, T.green, T.amber, T.purple, T.red, "#06B6D4", "#EC4899", T.navy];
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 18, animation: "fadeUp .5s ease" }}>
+      {/* Hero KPIs */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
+        <OpKpi icon="account_balance_wallet" label="Cartera total" value={`$${(carteraActual / 1000).toFixed(2)}B`} sub={`${crecYoY >= 0 ? "+" : ""}${crecYoY.toFixed(1)}% YoY`} accent={T.navy} />
+        <OpKpi icon="payments" label="Ingresos YTD" value={fmtShort(ytd.ingresos * 1000)} sub={`${ytdMeses} meses`} accent={T.blue} />
+        <OpKpi icon="trending_up" label="Margen financiero" value={`${margenFinPct.toFixed(1)}%`} sub={`${fmtShort((ytd.ingresos - ytd.costoFond) * 1000)} YTD`} accent={T.green} />
+        <OpKpi icon="paid" label="EBITDA / Margen" value={`${ebitdaPct.toFixed(1)}%`} sub={fmtShort(ebitdaYtd * 1000)} accent={T.purple} />
+        <OpKpi icon="speed" label="ROE / ROA" value={`${roe}% · ${roa}%`} sub="Anualizado" accent={T.amber} />
+        <OpKpi icon="verified" label="NPL ratio" value={`${npl}%`} sub={`Cobertura ${cobertura}%`} accent={npl < 3 ? T.green : T.amber} />
+      </div>
+
+      {/* P&L cascade + Composición ingresos */}
+      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.6fr) minmax(0, 1fr)", gap: 14 }}>
+        <div style={opCard}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+            <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: 0 }}>P&L · Cascada del mes</h3>
+            <span style={{ fontSize: 10, color: T.textTertiary, fontWeight: 700, letterSpacing: 0.8, textTransform: "uppercase" }}>Abril 2026 · MXN</span>
+          </div>
+          <PnlCascade items={DASH_FIN_PNL} />
+        </div>
+        <div style={opCard}>
+          <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: "0 0 14px" }}>Composición de ingresos</h3>
+          <PieChart entries={DASH_FIN_INGRESOS} palette={palette} />
+        </div>
+      </div>
+
+      {/* Trend mensual */}
+      <div style={opCard}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+          <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: 0 }}>Ingresos vs gastos · 12 meses</h3>
+          <span style={{ fontSize: 10, color: T.textTertiary, fontWeight: 700, letterSpacing: 0.8, textTransform: "uppercase" }}>MXN</span>
+        </div>
+        <GroupedBars data={DASH_FIN_TREND} height={150} series={[
+          { key: "ingresos", color: T.green, label: "Ingresos" },
+          { key: "costoFond", color: T.red, label: "Costo fondeo" },
+          { key: "opex", color: T.amber, label: "Gastos opex" },
+          { key: "prov", color: T.purple, label: "Provisiones" },
+        ]} />
+      </div>
+
+      {/* Cartera trend + Sectores */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 14 }}>
+        <div style={opCard}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+            <div>
+              <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: 0 }}>Evolución de cartera</h3>
+              <p style={{ fontSize: 11, color: T.textTertiary, margin: "2px 0 0" }}>Saldo de cartera bruto · MXN millones</p>
+            </div>
+            <div style={{ textAlign: "right" }}>
+              <div style={{ fontSize: 22, fontWeight: 900, color: T.navy, fontFamily: "'JetBrains Mono', monospace" }}>${(carteraActual / 1000).toFixed(2)}B</div>
+              <div style={{ fontSize: 11, color: crecYoY >= 0 ? T.green : T.red, fontWeight: 700 }}>{crecYoY >= 0 ? "↑" : "↓"} {Math.abs(crecYoY).toFixed(1)}% vs hace 12m</div>
+            </div>
+          </div>
+          <AreaTrend data={DASH_FIN_CARTERA_TREND} color={T.blue} height={110} />
+        </div>
+        <div style={opCard}>
+          <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: "0 0 14px" }}>Cartera por sector económico</h3>
+          <HBars entries={DASH_FIN_SECTORES} palette={palette} formatter={n => fmtShort(n * 1000000)} />
+        </div>
+      </div>
+
+      {/* Plan vs Real */}
+      <div style={opCard}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+          <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: 0 }}>Plan vs Real · YTD 2026</h3>
+          <span style={{ fontSize: 10, color: T.textTertiary, fontWeight: 700, letterSpacing: 0.8, textTransform: "uppercase" }}>4 meses · MXN</span>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {DASH_FIN_BUDGET.map(row => {
+            const variancePct = ((row.actual - row.budget) / row.budget) * 100;
+            const positive = variancePct >= 0;
+            return (
+              <div key={row.kpi} style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.4fr) 100px 100px minmax(0, 1.6fr) 80px", gap: 14, alignItems: "center", padding: "8px 0", borderBottom: `1px solid ${T.borderLight}` }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: T.text }}>{row.kpi}</span>
+                <span style={{ fontSize: 11, color: T.textTertiary, fontFamily: "'JetBrains Mono', monospace" }}>Plan {fmtShort(row.budget * 1000)}</span>
+                <span style={{ fontSize: 12, color: T.navy, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace" }}>Real {fmtShort(row.actual * 1000)}</span>
+                <div style={{ position: "relative", height: 8, background: T.surfaceAlt, borderRadius: 4, overflow: "hidden" }}>
+                  <div style={{ position: "absolute", left: 0, top: 0, height: "100%", width: `${Math.min((row.actual / Math.max(row.budget, row.actual)) * 100, 100)}%`, background: positive ? T.green : T.red, borderRadius: 4 }} />
+                  <div style={{ position: "absolute", left: `${(row.budget / Math.max(row.budget, row.actual)) * 100}%`, top: -2, height: 12, width: 2, background: T.navy }} />
+                </div>
+                <span style={{ fontSize: 12, fontWeight: 800, color: positive ? T.green : T.red, fontFamily: "'JetBrains Mono', monospace", padding: "3px 8px", borderRadius: 4, background: positive ? T.greenLight : T.redLight, textAlign: "center" }}>{positive ? "+" : ""}{variancePct.toFixed(1)}%</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Ratios bar */}
+      <div style={opCard}>
+        <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: "0 0 16px" }}>Ratios financieros clave</h3>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 18 }}>
+          {[
+            { label: "Eficiencia operativa", value: `${eficiencia.toFixed(1)}%`, target: "<40%", ok: eficiencia < 40, hint: "Gasto opex / margen financiero" },
+            { label: "Apalancamiento", value: "5.4×", target: "<7×", ok: true, hint: "Pasivo / Capital" },
+            { label: "Solvencia (capital)", value: "16.8%", target: ">12%", ok: true, hint: "Capital regulatorio" },
+            { label: "Liquidez", value: "1.42×", target: ">1×", ok: true, hint: "Activos circ / Pasivos circ" },
+            { label: "Días cobranza (DSO)", value: "12 d", target: "<15 d", ok: true, hint: "Rotación cuentas por cobrar" },
+            { label: "Cost-to-income", value: "33.4%", target: "<40%", ok: true, hint: "Costo total / Ingresos" },
+          ].map(r => (
+            <div key={r.label}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
+                <span style={{ fontSize: 11, color: T.textSecondary, fontWeight: 600 }}>{r.label}</span>
+                <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 3, background: r.ok ? T.greenLight : T.amberLight, color: r.ok ? T.green : T.amber, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace" }}>{r.target}</span>
+              </div>
+              <div style={{ fontSize: 22, fontWeight: 900, color: r.ok ? T.navy : T.amber, fontFamily: "'JetBrains Mono', monospace", lineHeight: 1.1 }}>{r.value}</div>
+              <div style={{ fontSize: 10, color: T.textTertiary, marginTop: 2 }}>{r.hint}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════
+// WORKING CAPITAL — DATA
+// ═══════════════════════════════════════════════
+const WC_BANCOS = [
+  { banco: "BBVA México", cuenta: "Cheques operativa", saldo: 28400, color: T.blue },
+  { banco: "Santander", cuenta: "Cheques operativa", saldo: 22100, color: T.red },
+  { banco: "Banamex / Citi", cuenta: "Cheques fondos", saldo: 12800, color: T.green },
+  { banco: "Banorte", cuenta: "Inversión vista 24h", saldo: 18400, color: T.amber },
+  { banco: "BBVA México", cuenta: "Mesa dinero 28d", saldo: 45000, color: T.blue },
+  { banco: "Santander", cuenta: "CETES 28d", saldo: 32500, color: T.red },
+  { banco: "Banbajío", cuenta: "Mesa dinero", saldo: 14200, color: T.purple },
+];
+
+const WC_AR_AGING = [
+  { bucket: "Al corriente", monto: 124500, color: T.green },
+  { bucket: "1–30 días", monto: 12400, color: T.amber },
+  { bucket: "31–60 días", monto: 4200, color: "#EA580C" },
+  { bucket: "61–90 días", monto: 1800, color: T.red },
+  { bucket: ">90 días", monto: 950, color: "#7C1D1D" },
+];
+
+const WC_AP_AGING = [
+  { bucket: "Por vencer 7d", monto: 8400, color: T.amber },
+  { bucket: "Por vencer 8–30d", monto: 18200, color: T.blue },
+  { bucket: "Por vencer 31–60d", monto: 9100, color: T.green },
+  { bucket: "Vencidas", monto: 1250, color: T.red },
+];
+
+const WC_CREDIT_LINES = [
+  { banco: "BBVA", linea: 500000, usado: 380000 },
+  { banco: "Santander", linea: 300000, usado: 220000 },
+  { banco: "Banorte", linea: 250000, usado: 175000 },
+  { banco: "Banbajío", linea: 150000, usado: 95000 },
+  { banco: "Banca Bursátil", linea: 400000, usado: 260000 },
+  { banco: "Banamex", linea: 200000, usado: 110000 },
+];
+
+const WC_FLUJO_13W = [
+  { sem: "S1", entrada: 18500, salida: 14200 },
+  { sem: "S2", entrada: 14800, salida: 16500 },
+  { sem: "S3", entrada: 22400, salida: 19200 },
+  { sem: "S4", entrada: 19800, salida: 17600 },
+  { sem: "S5", entrada: 15200, salida: 18900 },
+  { sem: "S6", entrada: 21500, salida: 16800 },
+  { sem: "S7", entrada: 18200, salida: 17200 },
+  { sem: "S8", entrada: 24600, salida: 21400 },
+  { sem: "S9", entrada: 17800, salida: 19500 },
+  { sem: "S10", entrada: 22100, salida: 18400 },
+  { sem: "S11", entrada: 19400, salida: 17800 },
+  { sem: "S12", entrada: 25200, salida: 22600 },
+  { sem: "S13", entrada: 18900, salida: 20100 },
+];
+
+const WC_PASIVOS_VENC = [
+  { fecha: "2026-05-12", concepto: "Pago intereses BBVA línea revolvente", monto: 3200, tipo: "Banco" },
+  { fecha: "2026-05-15", concepto: "Capital crédito Santander tramo 3", monto: 8500, tipo: "Banco" },
+  { fecha: "2026-05-20", concepto: "Proveedor SIEMENS — adquisición equipo", monto: 4200, tipo: "Proveedor" },
+  { fecha: "2026-05-22", concepto: "Cupón bono privado serie A", monto: 12400, tipo: "Bursátil" },
+  { fecha: "2026-05-28", concepto: "Pago intereses Banorte", monto: 2900, tipo: "Banco" },
+  { fecha: "2026-06-02", concepto: "Capital Banbajío tramo C", monto: 5100, tipo: "Banco" },
+  { fecha: "2026-06-10", concepto: "Proveedor CATERPILLAR — entrega máquina", monto: 8800, tipo: "Proveedor" },
+  { fecha: "2026-06-15", concepto: "Capital + intereses BBVA", monto: 15200, tipo: "Banco" },
+  { fecha: "2026-06-22", concepto: "Renovación CEBURES serie B", monto: 28000, tipo: "Bursátil" },
+  { fecha: "2026-07-05", concepto: "Renta arrendamiento corporativo", monto: 850, tipo: "Operativo" },
+];
+
+// ═══════════════════════════════════════════════
+// WORKING CAPITAL — UI HELPERS
+// ═══════════════════════════════════════════════
+function CashFlowChart({ data, height = 160 }) {
+  const max = Math.max(...data.flatMap(d => [d.entrada, d.salida]));
+  let cum = 0;
+  const cumPoints = data.map(d => { cum += (d.entrada - d.salida); return cum; });
+  const cumMax = Math.max(...cumPoints, 0);
+  const cumMin = Math.min(...cumPoints, 0);
+  const cumRange = cumMax - cumMin || 1;
+
+  return (
+    <div>
+      <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height, position: "relative" }}>
+        {data.map((d, i) => {
+          const neto = d.entrada - d.salida;
+          const cumPos = cumPoints[i];
+          const cumX = ((i + 0.5) / data.length) * 100;
+          const cumY = 100 - ((cumPos - cumMin) / cumRange) * 80 - 10;
+          return (
+            <div key={d.sem} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3, minWidth: 0, position: "relative", height: "100%", justifyContent: "flex-end" }}>
+              <div style={{ display: "flex", gap: 1, height: "100%", alignItems: "flex-end", width: "100%", justifyContent: "center" }}>
+                <div style={{ flex: 1, height: `${(d.entrada / max) * 100}%`, background: T.green, borderRadius: "2px 2px 0 0", minHeight: 2 }} title={`Entradas: ${fmtShort(d.entrada * 1000)}`} />
+                <div style={{ flex: 1, height: `${(d.salida / max) * 100}%`, background: T.red, borderRadius: "2px 2px 0 0", minHeight: 2 }} title={`Salidas: ${fmtShort(d.salida * 1000)}`} />
+              </div>
+              <span style={{ fontSize: 9, color: T.textTertiary }}>{d.sem}</span>
+              <span style={{ fontSize: 8, fontWeight: 800, color: neto >= 0 ? T.green : T.red, fontFamily: "'JetBrains Mono', monospace" }}>{neto >= 0 ? "+" : ""}{Math.round(neto / 100) / 10}M</span>
+            </div>
+          );
+        })}
+      </div>
+      <div style={{ display: "flex", justifyContent: "center", gap: 16, marginTop: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11 }}>
+          <span style={{ width: 10, height: 10, borderRadius: 2, background: T.green }} /><span style={{ color: T.textSecondary }}>Entradas</span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11 }}>
+          <span style={{ width: 10, height: 10, borderRadius: 2, background: T.red }} /><span style={{ color: T.textSecondary }}>Salidas</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════
+// WORKING CAPITAL — SECTION
+// ═══════════════════════════════════════════════
+function WorkingCapitalSection() {
+  const cashTotal = WC_BANCOS.reduce((s, b) => s + b.saldo, 0);
+  const cashLiq = WC_BANCOS.filter(b => b.cuenta.includes("operativa") || b.cuenta.includes("vista") || b.cuenta.includes("fondos")).reduce((s, b) => s + b.saldo, 0);
+  const cashInv = cashTotal - cashLiq;
+
+  const totalAR = WC_AR_AGING.reduce((s, a) => s + a.monto, 0);
+  const arOk = WC_AR_AGING[0].monto;
+  const arRiesgo = totalAR - arOk;
+  const arRiesgoPct = (arRiesgo / totalAR) * 100;
+
+  const totalAP = WC_AP_AGING.reduce((s, a) => s + a.monto, 0);
+  const apVencidas = WC_AP_AGING.find(a => a.bucket === "Vencidas")?.monto || 0;
+
+  const wcNeto = cashTotal + totalAR - totalAP;
+  const dso = 12; // días promedio cobranza
+  const dpo = 38;
+  const ccc = dso - dpo;
+
+  const totalLineas = WC_CREDIT_LINES.reduce((s, l) => s + l.linea, 0);
+  const totalUsado = WC_CREDIT_LINES.reduce((s, l) => s + l.usado, 0);
+  const utilizPct = (totalUsado / totalLineas) * 100;
+  const disponible = totalLineas - totalUsado;
+
+  const flujoNeto13w = WC_FLUJO_13W.reduce((s, w) => s + (w.entrada - w.salida), 0);
+  const semanaCritica = WC_FLUJO_13W.find(w => (w.entrada - w.salida) < -2000);
+
+  const tipoColors = { Banco: T.blue, Bursátil: T.purple, Proveedor: T.amber, Operativo: T.green };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 18, animation: "fadeUp .5s ease" }}>
+      {/* Hero KPIs */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 12 }}>
+        <OpKpi icon="account_balance" label="Caja total disponible" value={fmtShort(cashTotal * 1000)} sub={`${WC_BANCOS.length} cuentas activas`} accent={T.navy} />
+        <OpKpi icon="payments" label="Liquidez inmediata" value={fmtShort(cashLiq * 1000)} sub="Vista + 24h" accent={T.green} />
+        <OpKpi icon="trending_up" label="Inversiones" value={fmtShort(cashInv * 1000)} sub="Plazo ≥ 28 días" accent={T.blue} />
+        <OpKpi icon="receipt_long" label="Cuentas por cobrar" value={fmtShort(totalAR * 1000)} sub={`${arRiesgoPct.toFixed(1)}% en aging`} accent={T.amber} />
+        <OpKpi icon="payments" label="Cuentas por pagar" value={fmtShort(totalAP * 1000)} sub={apVencidas > 0 ? `${fmtShort(apVencidas * 1000)} vencidas` : "Sin vencidas"} accent={apVencidas > 0 ? T.red : T.purple} />
+        <OpKpi icon="schedule" label="Ciclo de conversión" value={`${ccc} d`} sub={`DSO ${dso} · DPO ${dpo}`} accent={ccc < 0 ? T.green : T.amber} />
+      </div>
+
+      {/* Cash position + Credit lines */}
+      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.1fr) minmax(0, 1fr)", gap: 14 }}>
+        <div style={opCard}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+            <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: 0 }}>Posición de caja por institución</h3>
+            <span style={{ fontSize: 11, color: T.green, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace" }}>{fmtShort(cashTotal * 1000)}</span>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {[...WC_BANCOS].sort((a, b) => b.saldo - a.saldo).map((b, i) => (
+              <div key={i} style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.2fr) minmax(0, 1.4fr) 100px minmax(0, 1.4fr)", gap: 10, alignItems: "center", padding: "8px 10px", borderRadius: T.radiusSm, background: T.surfaceAlt }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: T.navy }}>{b.banco}</span>
+                <span style={{ fontSize: 11, color: T.textSecondary }}>{b.cuenta}</span>
+                <span style={{ fontSize: 12, fontWeight: 800, color: T.text, fontFamily: "'JetBrains Mono', monospace", textAlign: "right" }}>{fmtShort(b.saldo * 1000)}</span>
+                <div style={{ height: 5, borderRadius: 3, background: T.border, overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${(b.saldo / WC_BANCOS[0].saldo) * 100}%`, background: b.color, borderRadius: 3 }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div style={opCard}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
+            <div>
+              <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: 0 }}>Líneas de crédito</h3>
+              <p style={{ fontSize: 11, color: T.textTertiary, margin: "2px 0 0" }}>Utilización por institución · MXN</p>
+            </div>
+            <div style={{ textAlign: "right" }}>
+              <div style={{ fontSize: 11, color: T.textTertiary, fontWeight: 700, letterSpacing: 0.6, textTransform: "uppercase" }}>Disponible</div>
+              <div style={{ fontSize: 18, fontWeight: 900, color: T.green, fontFamily: "'JetBrains Mono', monospace" }}>{fmtShort(disponible * 1000)}</div>
+            </div>
+          </div>
+          <div style={{ marginBottom: 14, padding: 10, background: T.blueLight, borderRadius: T.radiusSm, display: "flex", justifyContent: "space-between", fontSize: 11 }}>
+            <span style={{ color: T.navy, fontWeight: 700 }}>Utilización global</span>
+            <span style={{ color: T.navy, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace" }}>{utilizPct.toFixed(1)}% · {fmtShort(totalUsado * 1000)} / {fmtShort(totalLineas * 1000)}</span>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {WC_CREDIT_LINES.map(l => {
+              const pct = (l.usado / l.linea) * 100;
+              const color = pct >= 85 ? T.red : pct >= 70 ? T.amber : T.green;
+              return (
+                <div key={l.banco}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4, fontSize: 11 }}>
+                    <span style={{ fontWeight: 700, color: T.text }}>{l.banco}</span>
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", color: T.navy, fontWeight: 700 }}>{fmtShort(l.usado * 1000)} / {fmtShort(l.linea * 1000)}</span>
+                  </div>
+                  <div style={{ height: 8, borderRadius: 4, background: T.surfaceAlt, overflow: "hidden", position: "relative" }}>
+                    <div style={{ height: "100%", width: `${pct}%`, background: color, borderRadius: 4 }} />
+                  </div>
+                  <div style={{ fontSize: 9, color: T.textTertiary, marginTop: 2, fontWeight: 700 }}>{pct.toFixed(1)}% utilizada · {fmtShort((l.linea - l.usado) * 1000)} disponible</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Aging AR + AP */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 14 }}>
+        <div style={opCard}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+            <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: 0 }}>Aging cuentas por cobrar</h3>
+            <span style={{ fontSize: 11, color: T.navy, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace" }}>{fmtShort(totalAR * 1000)}</span>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {WC_AR_AGING.map(a => {
+              const pct = (a.monto / totalAR) * 100;
+              return (
+                <div key={a.bucket} style={{ display: "grid", gridTemplateColumns: "120px minmax(0, 1fr) 90px 50px", gap: 12, alignItems: "center" }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: T.text }}>{a.bucket}</span>
+                  <div style={{ height: 12, borderRadius: 4, background: T.surfaceAlt, overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${pct}%`, background: a.color, borderRadius: 4 }} />
+                  </div>
+                  <span style={{ fontSize: 11, fontWeight: 800, color: T.navy, fontFamily: "'JetBrains Mono', monospace", textAlign: "right" }}>{fmtShort(a.monto * 1000)}</span>
+                  <span style={{ fontSize: 11, fontWeight: 800, color: a.color, fontFamily: "'JetBrains Mono', monospace", textAlign: "right" }}>{pct.toFixed(1)}%</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div style={opCard}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+            <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: 0 }}>Aging cuentas por pagar</h3>
+            <span style={{ fontSize: 11, color: T.navy, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace" }}>{fmtShort(totalAP * 1000)}</span>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {WC_AP_AGING.map(a => {
+              const pct = (a.monto / totalAP) * 100;
+              return (
+                <div key={a.bucket} style={{ display: "grid", gridTemplateColumns: "140px minmax(0, 1fr) 90px 50px", gap: 12, alignItems: "center" }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: T.text }}>{a.bucket}</span>
+                  <div style={{ height: 12, borderRadius: 4, background: T.surfaceAlt, overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${pct}%`, background: a.color, borderRadius: 4 }} />
+                  </div>
+                  <span style={{ fontSize: 11, fontWeight: 800, color: T.navy, fontFamily: "'JetBrains Mono', monospace", textAlign: "right" }}>{fmtShort(a.monto * 1000)}</span>
+                  <span style={{ fontSize: 11, fontWeight: 800, color: a.color, fontFamily: "'JetBrains Mono', monospace", textAlign: "right" }}>{pct.toFixed(1)}%</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* 13W cash flow */}
+      <div style={opCard}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
+          <div>
+            <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: 0 }}>Proyección de flujo · 13 semanas</h3>
+            <p style={{ fontSize: 11, color: T.textTertiary, margin: "2px 0 0" }}>Entradas vs salidas semanales · MXN</p>
+          </div>
+          <div style={{ display: "flex", gap: 18, textAlign: "right" }}>
+            <div>
+              <div style={{ fontSize: 9, color: T.textTertiary, fontWeight: 700, letterSpacing: 0.6, textTransform: "uppercase" }}>Flujo neto 13s</div>
+              <div style={{ fontSize: 18, fontWeight: 900, color: flujoNeto13w >= 0 ? T.green : T.red, fontFamily: "'JetBrains Mono', monospace" }}>{flujoNeto13w >= 0 ? "+" : ""}{fmtShort(flujoNeto13w * 1000)}</div>
+            </div>
+            {semanaCritica && (
+              <div>
+                <div style={{ fontSize: 9, color: T.amber, fontWeight: 700, letterSpacing: 0.6, textTransform: "uppercase" }}>⚠ Semana crítica</div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: T.amber, fontFamily: "'JetBrains Mono', monospace" }}>{semanaCritica.sem}</div>
+              </div>
+            )}
+          </div>
+        </div>
+        <CashFlowChart data={WC_FLUJO_13W} />
+      </div>
+
+      {/* Próximos vencimientos */}
+      <div style={opCard}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+          <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: 0 }}>Vencimientos próximos · 90 días</h3>
+          <span style={{ fontSize: 11, color: T.textTertiary }}>{WC_PASIVOS_VENC.length} compromisos</span>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {WC_PASIVOS_VENC.map((v, i) => {
+            const days = Math.round((new Date(v.fecha) - new Date("2026-05-06")) / 86400000);
+            const urgent = days <= 7;
+            return (
+              <div key={i} style={{ display: "grid", gridTemplateColumns: "100px 90px minmax(0, 1fr) 110px 70px", gap: 12, alignItems: "center", padding: "10px 12px", background: urgent ? T.amberLight : T.surfaceAlt, borderRadius: T.radiusSm, borderLeft: `3px solid ${tipoColors[v.tipo] || T.textSecondary}` }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: urgent ? T.amber : T.navy, fontFamily: "'JetBrains Mono', monospace" }}>{v.fecha}</span>
+                <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 3, background: `${tipoColors[v.tipo]}14`, color: tipoColors[v.tipo], fontWeight: 800, justifySelf: "start" }}>{v.tipo}</span>
+                <span style={{ fontSize: 12, color: T.text, fontWeight: 500 }}>{v.concepto}</span>
+                <span style={{ fontSize: 12, fontWeight: 800, color: T.navy, fontFamily: "'JetBrains Mono', monospace", textAlign: "right" }}>{fmtShort(v.monto * 1000)}</span>
+                <span style={{ fontSize: 10, fontWeight: 800, color: urgent ? T.red : T.textSecondary, fontFamily: "'JetBrains Mono', monospace", textAlign: "right" }}>en {days}d</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Brechas de liquidez */}
+      <div style={opCard}>
+        <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: "0 0 14px" }}>Brecha de liquidez por bucket temporal</h3>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12 }}>
+          {[
+            { bucket: "≤ 7 días", entradas: 33300, salidas: 22200, color: T.green },
+            { bucket: "8 – 30 días", entradas: 76800, salidas: 53700, color: T.blue },
+            { bucket: "31 – 60 días", entradas: 71500, salidas: 64200, color: T.amber },
+            { bucket: "61 – 90 días", entradas: 64600, salidas: 70500, color: T.red },
+          ].map(b => {
+            const neto = b.entradas - b.salidas;
+            return (
+              <div key={b.bucket} style={{ background: T.surfaceAlt, borderRadius: T.radiusSm, padding: 14, borderTop: `3px solid ${b.color}` }}>
+                <div style={{ fontSize: 10, fontWeight: 800, color: T.textTertiary, letterSpacing: 0.8, textTransform: "uppercase", marginBottom: 8 }}>{b.bucket}</div>
+                <div style={{ fontSize: 11, color: T.green, marginBottom: 2, fontFamily: "'JetBrains Mono', monospace" }}>↑ {fmtShort(b.entradas * 1000)}</div>
+                <div style={{ fontSize: 11, color: T.red, marginBottom: 6, fontFamily: "'JetBrains Mono', monospace" }}>↓ {fmtShort(b.salidas * 1000)}</div>
+                <div style={{ fontSize: 16, fontWeight: 900, color: neto >= 0 ? T.green : T.red, fontFamily: "'JetBrains Mono', monospace" }}>{neto >= 0 ? "+" : ""}{fmtShort(neto * 1000)}</div>
+                <div style={{ fontSize: 9, color: T.textTertiary, marginTop: 2 }}>{neto >= 0 ? "Superávit" : "Déficit"}</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Capital de trabajo neto resumen */}
+      <div style={{ ...opCard, background: `linear-gradient(135deg, ${T.blueLight}, ${T.surface})` }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 14 }}>
+          <div>
+            <div style={{ fontSize: 10, fontWeight: 800, color: T.textTertiary, letterSpacing: 1, textTransform: "uppercase", marginBottom: 4 }}>Capital de trabajo neto</div>
+            <div style={{ fontSize: 28, fontWeight: 900, color: T.navy, fontFamily: "'JetBrains Mono', monospace" }}>{fmtShort(wcNeto * 1000)}</div>
+            <div style={{ fontSize: 11, color: T.textSecondary, marginTop: 4 }}>Caja {fmtShort(cashTotal * 1000)} + AR {fmtShort(totalAR * 1000)} − AP {fmtShort(totalAP * 1000)}</div>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, auto)", gap: 22 }}>
+            <div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: T.textTertiary, letterSpacing: 0.6, textTransform: "uppercase" }}>Quick ratio</div>
+              <div style={{ fontSize: 18, fontWeight: 900, color: T.green, fontFamily: "'JetBrains Mono', monospace" }}>1.42×</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: T.textTertiary, letterSpacing: 0.6, textTransform: "uppercase" }}>Current ratio</div>
+              <div style={{ fontSize: 18, fontWeight: 900, color: T.green, fontFamily: "'JetBrains Mono', monospace" }}>1.68×</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: T.textTertiary, letterSpacing: 0.6, textTransform: "uppercase" }}>Días de caja</div>
+              <div style={{ fontSize: 18, fontWeight: 900, color: T.navy, fontFamily: "'JetBrains Mono', monospace" }}>52 d</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════
 // DETAIL VIEW
 // ═══════════════════════════════════════════════
 function DetailView({ client: c }) {
   const [tab, setTab] = useState("resumen");
   const tabs = [
     { id: "resumen", label: "Resumen" },
+    { id: "empresa", label: "Empresa" },
     { id: "activo", label: "Información del Activo" },
     { id: "calificacion", label: "Calificación Ekatena" },
     { id: "financiero", label: "Financiero" },
     { id: "pasivos", label: "Pasivos" },
     { id: "buro", label: "Buró de Crédito" },
+    { id: "conclusiones", label: "Conclusiones IA" },
   ];
 
   return (
@@ -1597,17 +4620,133 @@ function DetailView({ client: c }) {
           </button>
         ))}
       </nav>
-      <main style={{ maxWidth: 1100, margin: "0 auto", padding: "24px 28px", animation: "fadeIn .25s ease" }}>
+      <main style={{ maxWidth: 1280, margin: "0 auto", padding: "24px 28px", width: "100%", animation: "fadeIn .25s ease" }}>
         {tab === "resumen" && <TabResumen c={c} />}
+        {tab === "empresa" && <TabEmpresa c={c} />}
         {tab === "activo" && <TabActivo c={c} />}
         {tab === "calificacion" && <TabCalificacion c={c} />}
         {tab === "financiero" && <TabFinanciero c={c} />}
         {tab === "pasivos" && <TabPasivos c={c} />}
         {tab === "buro" && <TabBuro c={c} />}
+        {tab === "conclusiones" && <TabConclusiones c={c} />}
       </main>
     </>
   );
 }
+
+// -- EMPRESA (descripción general) --
+function TabEmpresa({ c }) {
+  const e = empresaFor(c);
+  const servicios = SERVICIOS_BY_ACT[c.actividad] || ["Servicio principal", "Servicio secundario"];
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, animation: "fadeUp .4s ease" }}>
+      <div style={{ ...card, gridColumn: "1 / -1" }}>
+        {cardHead("Antecedentes")}
+        <p style={{ padding: "14px 20px", fontSize: 13, color: T.text, lineHeight: 1.6, margin: 0 }}>{e.antecedentes}</p>
+      </div>
+
+      <div style={card}>
+        {cardHead("Servicios y productos")}
+        <div style={{ padding: 14 }}>
+          {servicios.map((s, i) => (
+            <div key={s} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderBottom: i < servicios.length - 1 ? `1px solid ${T.borderLight}` : "none" }}>
+              <span style={{ width: 5, height: 5, borderRadius: "50%", background: T.blue }} />
+              <span style={{ fontSize: 13, color: T.text }}>{s}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div style={card}>
+        {cardHead("Capacidad operativa", "Datos declarados por el cliente")}
+        <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 14 }}>
+          <div>
+            <div style={{ fontSize: 10, color: T.textTertiary, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}>Capacidad declarada</div>
+            <div style={{ fontSize: 22, fontWeight: 900, color: T.navy, fontFamily: "'JetBrains Mono', monospace", marginTop: 4 }}>{e.capacidad}</div>
+          </div>
+          <div>
+            <div style={{ fontSize: 10, color: T.textTertiary, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}>Antigüedad</div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: T.text, marginTop: 4 }}>{c.antiguedad}</div>
+          </div>
+          <div>
+            <div style={{ fontSize: 10, color: T.textTertiary, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}>Sector</div>
+            <div style={{ fontSize: 13, color: T.text, marginTop: 4 }}>{c.giro}</div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ ...card, gridColumn: "1 / -1" }}>
+        {cardHead("Instalaciones")}
+        <div style={{ padding: 18, display: "grid", gridTemplateColumns: "180px 1fr", gap: 18, alignItems: "center" }}>
+          <div style={{ width: 180, height: 130, background: T.surfaceAlt, borderRadius: T.radiusSm, border: `1px dashed ${T.border}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: T.textTertiary }}>
+            <span className="material-symbols-outlined" style={{ fontSize: 32 }}>image</span>
+            <span style={{ fontSize: 10, marginTop: 6, fontWeight: 600 }}>Foto pendiente</span>
+          </div>
+          <div>
+            <p style={{ fontSize: 13, color: T.text, lineHeight: 1.6, margin: 0 }}>{e.instalaciones}</p>
+            <div style={{ marginTop: 12, fontSize: 11, color: T.textSecondary }}><strong>Domicilio:</strong> {c.direccion}</div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ ...card, gridColumn: "1 / -1" }}>
+        {cardHead("Organigrama", "Visualización pendiente · cargar archivo desde drive")}
+        <div style={{ padding: 24, display: "flex", flexDirection: "column", alignItems: "center", gap: 18 }}>
+          <div style={{ padding: "10px 22px", background: T.navy, color: "#fff", borderRadius: T.radiusSm, fontSize: 12, fontWeight: 700 }}>{c.obligadoSolidario || "Director General"}</div>
+          <div style={{ width: 1, height: 22, background: T.border }} />
+          <div style={{ display: "flex", gap: 24, flexWrap: "wrap", justifyContent: "center" }}>
+            {["Operaciones", "Finanzas", "Comercial", "Administración"].map(area => (
+              <div key={area} style={{ padding: "8px 16px", background: T.blueLight, color: T.navy, borderRadius: T.radiusSm, fontSize: 11, fontWeight: 700, border: `1px solid ${T.blue}30` }}>{area}</div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// -- CONCLUSIONES IA --
+function TabConclusiones({ c }) {
+  const r = generarConclusionesIA(c);
+  const [comentarios, setComentarios] = useState("");
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16, animation: "fadeUp .4s ease" }}>
+      <div style={{ ...card, padding: 18, borderLeft: `4px solid ${T.blue}` }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+          <span className="material-symbols-outlined" style={{ fontSize: 20, color: T.blue }}>psychology</span>
+          <h3 style={{ fontSize: 14, fontWeight: 800, color: T.navy, margin: 0 }}>Resumen ejecutivo · IA</h3>
+        </div>
+        <p style={{ fontSize: 13, color: T.text, margin: 0, lineHeight: 1.6 }}>
+          {c.nombre} muestra un perfil <strong style={{ color: scoreColor(r.score) }}>{r.score >= 700 ? "controlado" : r.score >= 650 ? "moderado" : "elevado"}</strong> de riesgo con score Ekatena de <strong>{r.score}</strong>,
+          cobertura de <strong>{r.cobertura.toFixed(1)}×</strong> y tendencia de ventas <strong>{r.tendVentas}</strong>. Margen EBITDA estimado en <strong>{(r.margen * 100).toFixed(1)}%</strong>.
+        </p>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 14 }}>
+        <ConclusionsBlock title="Fortalezas" icon="check_circle" color={T.green} items={r.fortalezas} />
+        <ConclusionsBlock title="Riesgos detectados" icon="warning" color={T.red} items={r.riesgos} />
+        <ConclusionsBlock title="Recomendaciones" icon="lightbulb" color={T.purple} items={r.recomendaciones} />
+      </div>
+
+      <div style={card}>
+        {cardHead("Comentarios del equipo de Riesgos")}
+        <div style={{ padding: 18 }}>
+          <textarea value={comentarios} onChange={e => setComentarios(e.target.value)} rows={4}
+            placeholder="Notas, validaciones o disclaimers del comité de riesgos..."
+            style={{ ...inp, resize: "vertical", minHeight: 90 }} />
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 12 }}>
+            <span style={{ fontSize: 11, color: T.textTertiary }}>Las conclusiones IA se actualizan al refrescar los EEFF del cliente.</span>
+            <button style={{ padding: "9px 18px", background: T.navy, color: "#fff", border: "none", borderRadius: T.radiusSm, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Guardar comentarios</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════
+// DETAIL VIEW (END)
+// ═══════════════════════════════════════════════
 
 // ═══════════════════════════════════════════════
 // SHARED COMPONENTS
@@ -1699,34 +4838,35 @@ function TabResumen({ c }) {
   const progreso = c.pagosRealizados / (c.pagosRealizados + c.pagosRestantes);
   const [observaciones, setObservaciones] = useState(c.observaciones || "");
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      {/* Hero strip */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
-        <div style={{ ...card, padding: "20px", display: "flex", flexDirection: "column", gap: 4 }}>
-          <span style={{ fontSize: 10, fontWeight: 600, color: T.textTertiary, textTransform: "uppercase", letterSpacing: .5 }}>Razón Social</span>
-          <span style={{ fontSize: 16, fontWeight: 800, color: T.navy, fontFamily: "'JetBrains Mono', monospace" }}>{c.razonSocial}</span>
-          <span style={{ fontSize: 11, color: T.textTertiary, fontFamily: "monospace" }}>{c.rfc}</span>
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      {/* Hero strip — 3 cols always */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 14 }}>
+        <div style={{ ...card, padding: 18, minWidth: 0 }}>
+          <span style={{ fontSize: 10, fontWeight: 700, color: T.textTertiary, textTransform: "uppercase", letterSpacing: .8 }}>Razón Social</span>
+          <div style={{ fontSize: 14, fontWeight: 800, color: T.navy, fontFamily: "'JetBrains Mono', monospace", marginTop: 6, lineHeight: 1.25, wordBreak: "break-word" }}>{c.razonSocial}</div>
+          <div style={{ fontSize: 11, color: T.textTertiary, fontFamily: "monospace", marginTop: 6 }}>{c.rfc}</div>
         </div>
-        <div style={{ ...card, padding: "20px", display: "flex", alignItems: "center", gap: 16 }}>
-          <div style={{ width: 52, height: 52, borderRadius: "50%", background: `${sc}12`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <span style={{ fontSize: 22, fontWeight: 900, color: sc, fontFamily: "'JetBrains Mono', monospace" }}>{c.calificacion.score}</span>
+        <div style={{ ...card, padding: 18, display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
+          <div style={{ width: 56, height: 56, borderRadius: "50%", background: `${sc}12`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <span style={{ fontSize: 20, fontWeight: 900, color: sc, fontFamily: "'JetBrains Mono', monospace" }}>{c.calificacion.score}</span>
           </div>
-          <div>
-            <div style={{ fontSize: 10, fontWeight: 600, color: T.textTertiary, textTransform: "uppercase", letterSpacing: .5 }}>Score Ekatena</div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: sc }}>Riesgo {c.calificacion.riesgo}</div>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: T.textTertiary, textTransform: "uppercase", letterSpacing: .8 }}>Score Ekatena</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: sc, marginTop: 2 }}>Riesgo {c.calificacion.riesgo}</div>
+            <div style={{ fontSize: 10, color: T.textTertiary, marginTop: 2 }}>Buró: {c.buroCredito.puntaje} · {c.buroCredito.gradoRiesgo}</div>
           </div>
         </div>
-        <div style={{ ...card, padding: "20px" }}>
-          <div style={{ fontSize: 10, fontWeight: 600, color: T.textTertiary, textTransform: "uppercase", letterSpacing: .5, marginBottom: 4 }}>Próximo Pago</div>
-          <div style={{ fontSize: 20, fontWeight: 800, color: c.diasParaPago <= 3 ? T.red : T.navy, fontFamily: "'JetBrains Mono', monospace" }}>{c.proximoPago}</div>
-          <div style={{ fontSize: 11, color: c.diasParaPago <= 3 ? T.red : T.textTertiary, fontWeight: c.diasParaPago <= 3 ? 700 : 400, marginTop: 2 }}>
+        <div style={{ ...card, padding: 18, minWidth: 0 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: T.textTertiary, textTransform: "uppercase", letterSpacing: .8, marginBottom: 6 }}>Próximo Pago</div>
+          <div style={{ fontSize: 18, fontWeight: 800, color: c.diasParaPago <= 3 ? T.red : T.navy, fontFamily: "'JetBrains Mono', monospace" }}>{c.proximoPago}</div>
+          <div style={{ fontSize: 11, color: c.diasParaPago <= 3 ? T.red : T.textTertiary, fontWeight: c.diasParaPago <= 3 ? 700 : 500, marginTop: 4 }}>
             {c.diasParaPago <= 3 ? `⚠ Vence en ${c.diasParaPago} día${c.diasParaPago !== 1 ? "s" : ""}` : `En ${c.diasParaPago} días`}
           </div>
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16 }}>
-        {/* Left: company + people */}
+      {/* Datos generales + Cuadro Accionario · 2 cols */}
+      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.3fr) minmax(0, 1fr)", gap: 14 }}>
         <div style={card}>
           {cardHead("Datos Generales")}
           <InfoRow label="Actividad / Giro" value={c.giro} accent />
@@ -1736,62 +4876,44 @@ function TabResumen({ c }) {
           <InfoRow label="Obligado Solidario" value={c.obligadoSolidario} accent />
           <InfoRow label="Ejecutivo Comercial" value={c.ejecutivoComercial} />
         </div>
-        {/* Right: accionistas + payment progress */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <div style={card}>
-            {cardHead("Cuadro Accionario")}
-            {c.accionistas.map((a, i) => (
-              <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 20px", borderBottom: i < c.accionistas.length - 1 ? `1px solid ${T.borderLight}` : "none" }}>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{a.nombre}</div>
-                  <div style={{ fontSize: 11, color: T.textTertiary }}>{fmt(a.monto)}</div>
-                </div>
-                <span style={{ fontSize: 20, fontWeight: 800, color: a.porcentaje > 50 ? T.navy : T.textTertiary, fontFamily: "'JetBrains Mono', monospace" }}>{a.porcentaje}%</span>
+        <div style={card}>
+          {cardHead("Cuadro Accionario")}
+          {c.accionistas.map((a, i) => (
+            <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 18px", borderBottom: i < c.accionistas.length - 1 ? `1px solid ${T.borderLight}` : "none", gap: 10 }}>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: T.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{a.nombre}</div>
+                <div style={{ fontSize: 10, color: T.textTertiary, marginTop: 2 }}>{fmt(a.monto)}</div>
               </div>
-            ))}
-          </div>
-          <div style={{ ...card, padding: "18px 20px" }}>
-            <div style={{ fontSize: 10, fontWeight: 600, color: T.textTertiary, textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>Progreso de Pagos</div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
-              <span style={{ fontSize: 24, fontWeight: 800, color: T.navy, fontFamily: "'JetBrains Mono', monospace" }}>{c.pagosRealizados}/{c.pagosRealizados + c.pagosRestantes}</span>
-              <span style={{ fontSize: 12, color: T.textTertiary }}>Saldo: {fmt(c.saldoPendiente)}</span>
+              <span style={{ fontSize: 18, fontWeight: 800, color: a.porcentaje > 50 ? T.navy : T.textTertiary, fontFamily: "'JetBrains Mono', monospace", flexShrink: 0 }}>{a.porcentaje}%</span>
             </div>
-            <div style={{ height: 8, borderRadius: 4, background: T.surfaceAlt, overflow: "hidden" }}>
-              <div style={{ height: "100%", width: `${progreso * 100}%`, borderRadius: 4, background: `linear-gradient(90deg, ${T.blue}, ${T.green})`, transition: "width 1s ease" }} />
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, fontSize: 10, color: T.textTertiary }}>
-              <span>{c.pagosRealizados} realizados</span>
-              <span>{c.pagosRestantes} restantes</span>
-            </div>
-          </div>
+          ))}
         </div>
       </div>
 
-      {/* Observaciones */}
-      <div style={{ ...card, padding: "18px 20px" }}>
-        <div style={{ fontSize: 10, fontWeight: 600, color: T.textTertiary, textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>Observaciones</div>
-        <textarea
-          value={observaciones}
-          onChange={e => setObservaciones(e.target.value)}
-          placeholder="Escribe observaciones sobre este cliente..."
-          rows={4}
-          style={{
-            width: "100%",
-            padding: "10px 12px",
-            fontSize: 13,
-            fontFamily: "inherit",
-            color: T.text,
-            background: T.surfaceAlt,
-            border: `1px solid ${T.border}`,
-            borderRadius: 8,
-            resize: "vertical",
-            outline: "none",
-            boxSizing: "border-box",
-            lineHeight: 1.5,
-          }}
-          onFocus={e => e.target.style.borderColor = T.blue}
-          onBlur={e => e.target.style.borderColor = T.border}
-        />
+      {/* Progreso + Observaciones · 2 cols */}
+      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1.2fr)", gap: 14 }}>
+        <div style={{ ...card, padding: 18 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: T.textTertiary, textTransform: "uppercase", letterSpacing: .8, marginBottom: 12 }}>Progreso de Pagos</div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
+            <span style={{ fontSize: 22, fontWeight: 800, color: T.navy, fontFamily: "'JetBrains Mono', monospace" }}>{c.pagosRealizados}/{c.pagosRealizados + c.pagosRestantes}</span>
+            <span style={{ fontSize: 11, color: T.textTertiary }}>Saldo: {fmt(c.saldoPendiente)}</span>
+          </div>
+          <div style={{ height: 8, borderRadius: 4, background: T.surfaceAlt, overflow: "hidden" }}>
+            <div style={{ height: "100%", width: `${progreso * 100}%`, borderRadius: 4, background: `linear-gradient(90deg, ${T.blue}, ${T.green})`, transition: "width 1s ease" }} />
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, fontSize: 10, color: T.textTertiary }}>
+            <span>{c.pagosRealizados} realizados</span>
+            <span>{c.pagosRestantes} restantes</span>
+          </div>
+        </div>
+        <div style={{ ...card, padding: 18 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: T.textTertiary, textTransform: "uppercase", letterSpacing: .8, marginBottom: 8 }}>Observaciones</div>
+          <textarea value={observaciones} onChange={e => setObservaciones(e.target.value)}
+            placeholder="Escribe observaciones sobre este cliente..." rows={3}
+            style={{ width: "100%", padding: "10px 12px", fontSize: 12, fontFamily: "inherit", color: T.text, background: T.surfaceAlt, border: `1px solid ${T.border}`, borderRadius: 8, resize: "vertical", outline: "none", boxSizing: "border-box", lineHeight: 1.5, minHeight: 78 }}
+            onFocus={e => e.target.style.borderColor = T.blue}
+            onBlur={e => e.target.style.borderColor = T.border} />
+        </div>
       </div>
     </div>
   );
@@ -1800,61 +4922,193 @@ function TabResumen({ c }) {
 // -- ACTIVO --
 function TabActivo({ c }) {
   const a = c.activo;
+  const contracts = contractsForClient(c);
+  const [selectedId, setSelectedId] = useState("all");
+  const selected = contracts.find(co => co.contrato === selectedId);
+  const totalValor = contracts.reduce((s, co) => s + co.valorBienSinIVA, 0);
+  const totalRenta = contracts.reduce((s, co) => s + co.rentasFijas, 0);
+  const totalSaldo = contracts.reduce((s, co) => s + co.total, 0);
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      <div style={{ ...card, background: `linear-gradient(135deg, ${T.blueLight}, ${T.surface})` }}>
-        <div style={{ padding: "22px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16 }}>
-          <div>
-            <div style={{ fontSize: 10, fontWeight: 700, color: T.textTertiary, textTransform: "uppercase", letterSpacing: .8 }}>Descripción del Activo</div>
-            <h2 style={{ fontSize: 20, fontWeight: 800, color: T.navy, fontFamily: "'JetBrains Mono', monospace", margin: "6px 0 0" }}>{a.descripcionGeneral}</h2>
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      {contracts.length > 0 && (
+        <div style={{ ...card, padding: "14px 18px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap" }}>
+            <div style={{ flex: "2 1 260px", minWidth: 0 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: T.textTertiary, letterSpacing: 1, textTransform: "uppercase", marginBottom: 6 }}>Activos del cliente</div>
+              <select value={selectedId} onChange={e => setSelectedId(e.target.value)} style={{ ...inp, fontSize: 12, fontWeight: 600 }}>
+                <option value="all">📋 Ver todos los contratos ({contracts.length})</option>
+                {contracts.map(co => (
+                  <option key={co.contrato} value={co.contrato}>{co.contrato} · {co.bien.length > 36 ? co.bien.slice(0,34) + "…" : co.bien}</option>
+                ))}
+              </select>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, auto))", gap: 22, flex: "1 1 auto" }}>
+              <ResumenStat label="Valor s/IVA" value={fmtShort(totalValor)} color={T.navy} />
+              <ResumenStat label="Renta total" value={fmtShort(totalRenta)} color={T.green} />
+              <ResumenStat label="Saldo" value={fmtShort(totalSaldo)} color={T.amber} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedId === "all" ? (
+        <>
+          {/* Contracts grid */}
+          {contracts.length > 0 && (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 14 }}>
+              {contracts.map(co => (
+                <button key={co.contrato} onClick={() => setSelectedId(co.contrato)} className="hover-lift"
+                  style={{ ...card, padding: 0, cursor: "pointer", textAlign: "left", border: `1px solid ${T.border}`, fontFamily: "inherit", overflow: "hidden", minWidth: 0 }}>
+                  <div style={{ padding: "12px 16px", borderBottom: `1px solid ${T.borderLight}`, background: T.surfaceAlt }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, fontWeight: 800, color: T.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{co.contrato}</span>
+                      <span style={{ fontSize: 9, padding: "2px 7px", borderRadius: 3, background: T.blueLight, color: T.blue, fontWeight: 800, flexShrink: 0 }}>ID {co.idArr}</span>
+                    </div>
+                    <div style={{ fontSize: 11, color: T.textSecondary, marginTop: 5, lineHeight: 1.3 }}>{co.bien}</div>
+                  </div>
+                  <div style={{ padding: 14, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    <KpiSmall label="Valor s/IVA" value={fmtShort(co.valorBienSinIVA)} />
+                    <KpiSmall label="Renta mensual" value={fmtShort(co.rentasFijas)} />
+                    <KpiSmall label="Plazo" value={`${co.plazo} meses`} />
+                    <KpiSmall label="Tasa / TIR" value={`${co.tasa}% / ${co.tir}%`} />
+                    <KpiSmall label="Desembolso" value={co.fechaDesembolso} mono />
+                    <KpiSmall label="Vencimiento" value={co.fechaVencimiento} mono />
+                  </div>
+                  <div style={{ padding: "9px 16px", borderTop: `1px solid ${T.borderLight}`, fontSize: 10, color: T.textTertiary, fontWeight: 700, letterSpacing: .8, textTransform: "uppercase", display: "flex", justifyContent: "space-between" }}>
+                    <span>Ver detalle</span>
+                    <span>→</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Existing expediente master view */}
+          <div style={{ ...card, background: `linear-gradient(135deg, ${T.blueLight}, ${T.surface})`, padding: "18px 22px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16 }}>
+              <div style={{ minWidth: 0, flex: "1 1 240px" }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: T.textTertiary, textTransform: "uppercase", letterSpacing: .8 }}>Activo del expediente · USD</div>
+                <h2 style={{ fontSize: 18, fontWeight: 800, color: T.navy, fontFamily: "'JetBrains Mono', monospace", margin: "4px 0 0" }}>{a.descripcionGeneral}</h2>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: T.textTertiary, textTransform: "uppercase", letterSpacing: .8 }}>Total USD</div>
+                <div style={{ fontSize: 24, fontWeight: 800, color: T.navy, fontFamily: "'JetBrains Mono', monospace" }}>{fmtUSD(a.totalGeneralUSD)}</div>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 14 }}>
+            {a.operaciones.map((op, oi) => (
+              <div key={oi} style={card}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 18px", borderBottom: `1px solid ${T.borderLight}`, background: T.surfaceAlt }}>
+                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: oi === 0 ? T.blue : T.amber }} />
+                  <h3 style={{ fontSize: 13, fontWeight: 700, color: T.navy, margin: 0, flex: 1 }}>{op.tipo}</h3>
+                  <span style={{ fontSize: 14, fontWeight: 800, color: oi === 0 ? T.blue : T.amber, fontFamily: "'JetBrains Mono', monospace" }}>{fmtUSD(op.totalUSD)}</span>
+                </div>
+                {op.items.map((item, ii) => (
+                  <div key={ii} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 18px", borderBottom: ii < op.items.length - 1 ? `1px solid ${T.borderLight}` : "none", gap: 12 }}>
+                    <span style={{ fontSize: 12, fontWeight: 500, color: T.text }}>{item.descripcion}</span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: T.textSecondary, fontFamily: "'Courier New', monospace", flexShrink: 0 }}>{fmtUSD(item.costoUSD)}</span>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+
+          <div style={card}>
+            {cardHead("Términos del Financiamiento (master)")}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 1, background: T.borderLight }}>
+              {[
+                { l: "Producto", v: c.financiamiento.producto },
+                { l: "Valor Factura", v: fmt(c.financiamiento.valorFactura), b: true },
+                { l: "Plazo", v: `${c.financiamiento.plazo} meses` },
+                { l: "Tasa VNA", v: c.financiamiento.tasaVNA },
+                { l: "TIR", v: c.financiamiento.tir },
+                { l: "Comisión Apertura", v: c.financiamiento.comisionApertura },
+                { l: "Enganche", v: c.financiamiento.enganche },
+                { l: "Rentas en Depósito", v: c.financiamiento.rentasDeposito?.toString() },
+                { l: "Valor Residual", v: c.financiamiento.valorResidual },
+                { l: "Opción Compra", v: c.financiamiento.opcionCompra },
+                { l: "Renta s/IVA", v: fmt(c.financiamiento.rentaMensualSIVA), b: true },
+                { l: "Renta c/IVA", v: fmt(c.financiamiento.rentaMensualCIVA), b: true },
+              ].map((item, i) => (
+                <div key={i} style={{ background: T.surface, padding: "11px 13px" }}>
+                  <div style={{ fontSize: 9, fontWeight: 600, color: T.textTertiary, textTransform: "uppercase", letterSpacing: .4, marginBottom: 3 }}>{item.l}</div>
+                  <div style={{ fontSize: 12, fontWeight: item.b ? 800 : 600, color: item.b ? T.navy : T.text }}>{item.v}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      ) : selected && <ContractDetailView contract={selected} />}
+    </div>
+  );
+}
+
+function KpiSmall({ label, value, mono }) {
+  return (
+    <div style={{ minWidth: 0 }}>
+      <div style={{ fontSize: 9, color: T.textTertiary, fontWeight: 700, letterSpacing: .8, textTransform: "uppercase" }}>{label}</div>
+      <div style={{ fontSize: 12, fontWeight: 700, color: T.navy, fontFamily: mono ? "'JetBrains Mono', monospace" : "inherit", marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{value}</div>
+    </div>
+  );
+}
+
+function ResumenStat({ label, value, color }) {
+  return (
+    <div style={{ minWidth: 0 }}>
+      <div style={{ fontSize: 9, color: T.textTertiary, fontWeight: 700, letterSpacing: .8, textTransform: "uppercase" }}>{label}</div>
+      <div style={{ fontSize: 16, fontWeight: 800, color, fontFamily: "'JetBrains Mono', monospace", marginTop: 2 }}>{value}</div>
+    </div>
+  );
+}
+
+function ContractDetailView({ contract: co }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <div style={{ ...card, background: `linear-gradient(135deg, ${T.blueLight}, ${T.surface})`, padding: "20px 22px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 16 }}>
+          <div style={{ minWidth: 0, flex: "1 1 240px" }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: T.textTertiary, textTransform: "uppercase", letterSpacing: .8 }}>Contrato</div>
+            <h2 style={{ fontSize: 22, fontWeight: 800, color: T.navy, fontFamily: "'JetBrains Mono', monospace", margin: "4px 0 4px" }}>{co.contrato}</h2>
+            <p style={{ fontSize: 12, color: T.textSecondary, margin: 0 }}>{co.bien}</p>
           </div>
           <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: T.textTertiary, textTransform: "uppercase", letterSpacing: .8 }}>Total USD</div>
-            <div style={{ fontSize: 28, fontWeight: 800, color: T.navy, fontFamily: "'JetBrains Mono', monospace" }}>{fmtUSD(a.totalGeneralUSD)}</div>
+            <div style={{ fontSize: 10, fontWeight: 700, color: T.textTertiary, textTransform: "uppercase", letterSpacing: .8 }}>Valor s/IVA</div>
+            <div style={{ fontSize: 24, fontWeight: 800, color: T.navy, fontFamily: "'JetBrains Mono', monospace", marginTop: 4 }}>{fmt(co.valorBienSinIVA)}</div>
           </div>
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: 16 }}>
-        {a.operaciones.map((op, oi) => (
-          <div key={oi} style={card}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 20px", borderBottom: `1px solid ${T.borderLight}`, background: T.surfaceAlt }}>
-              <div style={{ width: 8, height: 8, borderRadius: "50%", background: oi === 0 ? T.blue : T.amber }} />
-              <h3 style={{ fontSize: 13, fontWeight: 700, color: T.navy, margin: 0, flex: 1 }}>{op.tipo}</h3>
-              <span style={{ fontSize: 15, fontWeight: 800, color: oi === 0 ? T.blue : T.amber, fontFamily: "'JetBrains Mono', monospace" }}>{fmtUSD(op.totalUSD)}</span>
-            </div>
-            {op.items.map((item, ii) => (
-              <div key={ii} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "13px 20px", borderBottom: ii < op.items.length - 1 ? `1px solid ${T.borderLight}` : "none", gap: 12 }}>
-                <span style={{ fontSize: 13, fontWeight: 500, color: T.text }}>{item.descripcion}</span>
-                <span style={{ fontSize: 13, fontWeight: 700, color: T.textSecondary, fontFamily: "'Courier New', monospace", flexShrink: 0 }}>{fmtUSD(item.costoUSD)}</span>
-              </div>
-            ))}
-          </div>
-        ))}
-      </div>
-
-      <div style={card}>
-        {cardHead("Términos del Financiamiento")}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 1, background: T.borderLight }}>
-          {[
-            { l: "Producto", v: c.financiamiento.producto },
-            { l: "Valor Factura", v: fmt(c.financiamiento.valorFactura), b: true },
-            { l: "Plazo", v: `${c.financiamiento.plazo} meses` },
-            { l: "Tasa VNA", v: c.financiamiento.tasaVNA },
-            { l: "TIR", v: c.financiamiento.tir },
-            { l: "Comisión Apertura", v: c.financiamiento.comisionApertura },
-            { l: "Enganche", v: c.financiamiento.enganche },
-            { l: "Rentas en Depósito", v: c.financiamiento.rentasDeposito?.toString() },
-            { l: "Valor Residual", v: c.financiamiento.valorResidual },
-            { l: "Opción Compra", v: c.financiamiento.opcionCompra },
-            { l: "Renta s/IVA", v: fmt(c.financiamiento.rentaMensualSIVA), b: true },
-            { l: "Renta c/IVA", v: fmt(c.financiamiento.rentaMensualCIVA), b: true },
-          ].map((item, i) => (
-            <div key={i} style={{ background: T.surface, padding: "12px 14px" }}>
-              <div style={{ fontSize: 9, fontWeight: 600, color: T.textTertiary, textTransform: "uppercase", letterSpacing: .4, marginBottom: 3 }}>{item.l}</div>
-              <div style={{ fontSize: 13, fontWeight: item.b ? 800 : 600, color: item.b ? T.navy : T.text }}>{item.v}</div>
-            </div>
-          ))}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 14 }}>
+        <div style={card}>
+          {cardHead("Calendario")}
+          <InfoRow label="Fecha desembolso" value={co.fechaDesembolso} mono />
+          <InfoRow label="Fecha 1er pago" value={co.fecha1erPago} mono />
+          <InfoRow label="Fecha vencimiento" value={co.fechaVencimiento} accent mono />
+          <InfoRow label="Plazo" value={`${co.plazo} meses`} />
+        </div>
+        <div style={card}>
+          {cardHead("Términos financieros")}
+          <InfoRow label="Pago inicial" value={fmt(co.pagoInicial)} />
+          <InfoRow label="Monto financiado" value={fmt(co.montoFinanciado)} accent />
+          <InfoRow label="Tasa anual" value={`${co.tasa}%`} />
+          <InfoRow label="TIR mensual" value={`${co.tir}%`} accent />
+        </div>
+        <div style={card}>
+          {cardHead("Rentas")}
+          <InfoRow label="Renta mensual" value={fmt(co.rentasFijas)} accent />
+          <InfoRow label="Total rentas" value={fmt(co.totalRentas)} />
+          <InfoRow label="Por devengar" value={fmt(co.rentaPorDevengar)} />
+          <InfoRow label="Opción de compra" value={fmt(co.opcionCompra)} />
+        </div>
+        <div style={card}>
+          {cardHead("Estatus de cuenta")}
+          <InfoRow label="Saldo total" value={fmt(co.total)} accent />
+          <InfoRow label="Al corriente" value={fmt(co.alCorriente)} />
+          <InfoRow label="Vencido 30d" value={co.d30 > 0 ? fmt(co.d30) : "—"} />
+          <InfoRow label="Vencido +90d" value={co.dmas90 > 0 ? fmt(co.dmas90) : "—"} />
         </div>
       </div>
     </div>
