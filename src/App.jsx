@@ -13,16 +13,16 @@ const T = {
   textSecondary: "#6B6B6B",
   textTertiary: "#9E9E9E",
   navy: "#1B2559",
-  blue: "#2563EB",
-  blueLight: "#EFF6FF",
-  green: "#059669",
-  greenLight: "#ECFDF5",
-  amber: "#D97706",
-  amberLight: "#FFFBEB",
-  red: "#DC2626",
-  redLight: "#FEF2F2",
-  purple: "#7C3AED",
-  purpleLight: "#F5F3FF",
+  blue: "#2B5A8E",
+  blueLight: "#A8C2DC",
+  green: "#1F7A4D",
+  greenLight: "#B5DCC2",
+  amber: "#A66E3D",
+  amberLight: "#E2C295",
+  red: "#A03838",
+  redLight: "#E5B0B0",
+  purple: "#5E4880",
+  purpleLight: "#C5B0D2",
   shadow: "0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03)",
   shadowMd: "0 4px 12px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.04)",
   shadowLg: "0 8px 24px rgba(0,0,0,0.06), 0 2px 6px rgba(0,0,0,0.04)",
@@ -87,8 +87,8 @@ const CLIENTS = [
         { institucion: "BBVA", saldo: 347260068, color: T.green },
         { institucion: "BANORTE", saldo: 289920981, color: T.amber },
         { institucion: "BANBAJIO", saldo: 193280000, color: T.purple },
-        { institucion: "ACTIVE LEAS.", saldo: 78090107, color: "#E67E22" },
-        { institucion: "ENGEN CAP.", saldo: 35820177, color: "#0EA5E9" },
+        { institucion: "ACTIVE LEAS.", saldo: 78090107, color: "#8B7355" },
+        { institucion: "ENGEN CAP.", saldo: 35820177, color: "#688CB3" },
         { institucion: "ARR. BANORTE", saldo: 10046888, color: "#94A3B8" },
       ],
     },
@@ -680,8 +680,8 @@ const NAV_SECTIONS = [
     label: "Finanzas",
     icon: "account_balance",
     items: [
-      { id: "fin-quanto", label: "Fin Quanto" },
-      { id: "working-capital", label: "Working Capital Operativo" },
+      { id: "fin-quanto", label: "Cartera Quanto" },
+      { id: "working-capital", label: "Capital de Trabajo Operativo" },
       { id: "recordatorios", label: "Recordatorios de Pago" },
     ],
   },
@@ -704,7 +704,7 @@ const NAV_SECTIONS = [
     items: [
       { id: "riesgos-panorama", label: "Panorama" },
       { id: "riesgos-expedientes", label: "Expedientes" },
-      { id: "riesgos-analisis", label: "Análisis IA" },
+      { id: "riesgos-analisis", label: "Análisis de Riesgos" },
     ],
   },
 ];
@@ -758,7 +758,7 @@ export default function App() {
           showBack={!!clientId}
           onBack={closeClient}
           title={clientId ? client?.nombre : section?.label}
-          subtitle={clientId ? "Expediente Ekatena" : "Sección"}
+          subtitle={clientId ? "Expediente" : "Sección"}
         />
 
         {clientId && client ? (
@@ -827,7 +827,7 @@ function Sidebar({ activeSection, onNavigate }) {
         <div style={{ width: 38, height: 38, borderRadius: 9, background: `linear-gradient(135deg, ${T.navy}, ${T.blue})`, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 13, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5 }}>IL</div>
         <div style={{ lineHeight: 1.05 }}>
           <div style={{ fontSize: 14, fontWeight: 800, color: T.navy, letterSpacing: 1.6 }}>IMAGINA</div>
-          <div style={{ fontSize: 8, letterSpacing: 3, color: T.textTertiary, fontWeight: 700, marginTop: 2 }}>LEASING · EKATENA</div>
+          <div style={{ fontSize: 8, letterSpacing: 3, color: T.textTertiary, fontWeight: 700, marginTop: 2 }}>LEASING</div>
         </div>
       </div>
 
@@ -859,7 +859,7 @@ function Sidebar({ activeSection, onNavigate }) {
 
       {/* Footer */}
       <div style={{ padding: "14px 22px", borderTop: `1px solid ${T.border}`, fontSize: 10, color: T.textTertiary, fontWeight: 600, letterSpacing: 0.4 }}>
-        v1.0 · Dashboard Ekatena
+        v1.0 · Dashboard
       </div>
     </aside>
   );
@@ -917,24 +917,23 @@ function KpiCorporativosSection() {
   const indiceMorosidad = totalMora > 0 ? (totalMora / totalSaldos) * 100 : 4.32;
   const solicitudesEnProceso = 4; // dato estático de ejemplo
 
-  // Concentración por industria
-  const industrias = {};
-  QUANTO_OPS.forEach(o => {
-    const cl = CLIENTS.find(c => o.nombre.toUpperCase().includes(c.razonSocial.split(" SA")[0]));
-    const act = cl ? cl.actividad : "Otros";
-    industrias[act] = (industrias[act] || 0) + o.montoFinanciado;
-  });
-  const industriasSorted = Object.entries(industrias).sort((a, b) => b[1] - a[1]);
-  const maxIndustria = industriasSorted[0][1];
-
-  // Concentración por tipo de activo
-  const activos = {};
-  QUANTO_OPS.forEach(o => { activos[o.bien] = (activos[o.bien] || 0) + o.montoFinanciado; });
-  const activosSorted = Object.entries(activos).sort((a, b) => b[1] - a[1]);
-  const maxActivo = activosSorted[0][1];
-
-  const indColors = [T.blue, "#059669", T.amber, T.purple, T.red, "#06B6D4", "#EC4899", "#8B5CF6", T.navy, "#F59E0B", "#10B981"];
-  const actColors = ["#6366F1", "#EC4899", "#14B8A6", "#F59E0B", "#EF4444", "#8B5CF6", "#06B6D4", T.navy, T.green, T.blue, T.amber];
+  // Indicadores financieros (YTD 2026)
+  const ytdMeses = 4;
+  const ytd = DASH_FIN_TREND.slice(-ytdMeses).reduce(
+    (s, m) => ({ ingresos: s.ingresos + m.ingresos, costoFond: s.costoFond + m.costoFond, opex: s.opex + m.opex, prov: s.prov + m.prov }),
+    { ingresos: 0, costoFond: 0, opex: 0, prov: 0 }
+  );
+  const eficiencia = (ytd.opex / (ytd.ingresos - ytd.costoFond)) * 100;
+  const margenFinPct = ((ytd.ingresos - ytd.costoFond) / ytd.ingresos) * 100;
+  const ebitdaYtd = ytd.ingresos - ytd.costoFond - ytd.opex - ytd.prov;
+  const ebitdaPct = (ebitdaYtd / ytd.ingresos) * 100;
+  const carteraActualFin = DASH_FIN_CARTERA_TREND[DASH_FIN_CARTERA_TREND.length - 1].v;
+  const carteraInicioFin = DASH_FIN_CARTERA_TREND[0].v;
+  const crecYoY = ((carteraActualFin - carteraInicioFin) / carteraInicioFin) * 100;
+  const npl = 2.8;
+  const cobertura = 142;
+  const roa = 4.2;
+  const roe = 14.6;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -1013,88 +1012,40 @@ function KpiCorporativosSection() {
         </div>
       </div>
 
-      {/* Concentración: Industria + Tipo de Activo */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-        {/* Por Industria */}
-        <div style={{ ...card, padding: 0, overflow: "hidden" }}>
-          <div style={{ padding: "18px 24px", borderBottom: `1px solid ${T.borderLight}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <div style={{ width: 36, height: 36, borderRadius: 10, background: `linear-gradient(135deg, ${T.blueLight}, ${T.purpleLight})`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <span className="material-symbols-outlined" style={{ fontSize: 20, color: T.blue }}>factory</span>
-              </div>
-              <div>
-                <h3 style={{ fontSize: 14, fontWeight: 800, color: T.navy, margin: 0 }}>Concentración por Industria</h3>
-                <p style={{ fontSize: 10, color: T.textTertiary, margin: "1px 0 0" }}>Distribución del financiamiento por sector</p>
-              </div>
+      {/* Indicadores y ratios · YTD */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, minmax(0, 1fr))", gap: 12 }}>
+        <OpKpi icon="account_balance_wallet" label="Cartera total" value={`$${(carteraActualFin / 1000).toFixed(2)}B`} sub={`${crecYoY >= 0 ? "+" : ""}${crecYoY.toFixed(1)}% YoY`} accent={T.navy}
+          gauge={{ value: crecYoY, target: 15, direction: ">", scaleMax: 30, unit: "%", ok: crecYoY > 15 }} />
+        <OpKpi icon="payments" label="Ingresos YTD" value={fmtShort(ytd.ingresos * 1000)} sub={`${ytdMeses} meses · plan $132M`} accent={T.blue}
+          gauge={{ value: ytd.ingresos / 1000, target: 132, direction: ">", scaleMax: 160, unit: "M", ok: ytd.ingresos / 1000 > 132 }} />
+        <OpKpi icon="trending_up" label="Margen financiero" value={`${margenFinPct.toFixed(1)}%`} sub={`${fmtShort((ytd.ingresos - ytd.costoFond) * 1000)} YTD`} accent={T.green}
+          gauge={{ value: margenFinPct, target: 55, direction: ">", scaleMax: 80, unit: "%", ok: margenFinPct > 55 }} />
+        <OpKpi icon="paid" label="EBITDA / Margen" value={`${ebitdaPct.toFixed(1)}%`} sub={fmtShort(ebitdaYtd * 1000)} accent={T.purple}
+          gauge={{ value: ebitdaPct, target: 30, direction: ">", scaleMax: 50, unit: "%", ok: ebitdaPct > 30 }} />
+        <OpKpi icon="speed" label="ROE / ROA" value={`${roe}% · ${roa}%`} sub="Anualizado · meta ROE >12%" accent={T.amber}
+          gauge={{ value: roe, target: 12, direction: ">", scaleMax: 25, unit: "%", ok: roe > 12 }} />
+        <OpKpi icon="verified" label="NPL ratio" value={`${npl}%`} sub={`Cobertura ${cobertura}%`} accent={npl < 3 ? T.green : T.amber}
+          gauge={{ value: npl, target: 3, direction: "<", scaleMax: 8, unit: "%", ok: npl < 3 }} />
+        {[
+          { label: "Eficiencia operativa", value: eficiencia, display: `${eficiencia.toFixed(1)}%`, targetText: "<40%", target: 40, direction: "<", scaleMax: 60, unit: "%", ok: eficiencia < 40, hint: "Gasto opex / margen financiero" },
+          { label: "Apalancamiento", value: 5.4, display: "5.4×", targetText: "<7×", target: 7, direction: "<", scaleMax: 10, unit: "×", ok: true, hint: "Pasivo / Capital" },
+          { label: "Solvencia (capital)", value: 16.8, display: "16.8%", targetText: ">12%", target: 12, direction: ">", scaleMax: 25, unit: "%", ok: true, hint: "Capital regulatorio" },
+          { label: "Liquidez", value: 1.42, display: "1.42×", targetText: ">1×", target: 1, direction: ">", scaleMax: 3, unit: "×", ok: true, hint: "Activos circ / Pasivos circ" },
+          { label: "Días cobranza (DSO)", value: 12, display: "12 d", targetText: "<15 d", target: 15, direction: "<", scaleMax: 30, unit: "d", ok: true, hint: "Rotación cuentas por cobrar" },
+          { label: "Cost-to-income", value: 33.4, display: "33.4%", targetText: "<40%", target: 40, direction: "<", scaleMax: 60, unit: "%", ok: true, hint: "Costo total / Ingresos" },
+        ].map(r => (
+          <div key={r.label} style={opCard}>
+            <div style={{ fontSize: 9, fontWeight: 800, color: T.textTertiary, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 8 }}>{r.label}</div>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 4 }}>
+              <span style={{ fontSize: 26, fontWeight: 900, color: r.ok ? T.navy : T.amber, fontFamily: "'JetBrains Mono', monospace", lineHeight: 1 }}>{r.display}</span>
+              <span style={{ fontSize: 14, padding: "4px 10px", borderRadius: 4, background: r.ok ? T.greenLight : T.amberLight, color: r.ok ? T.green : T.amber, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace" }}>{r.targetText}</span>
             </div>
-            <div style={{ padding: "4px 12px", borderRadius: 20, background: T.blueLight, fontSize: 11, fontWeight: 700, color: T.blue }}>{industriasSorted.length} sectores</div>
+            <div style={{ fontSize: 10, color: T.textTertiary }}>{r.hint}</div>
+            <RatioGauge value={r.value} target={r.target} direction={r.direction} scaleMax={r.scaleMax} unit={r.unit} ok={r.ok} />
           </div>
-          <div style={{ padding: "16px 24px 20px" }}>
-            {industriasSorted.map(([name, val], i) => {
-              const pct = (val / totalCartera * 100);
-              const barWidth = (val / maxIndustria * 100);
-              const color = indColors[i % indColors.length];
-              return (
-                <div key={name} style={{ marginBottom: i < industriasSorted.length - 1 ? 12 : 0 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 5 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <div style={{ width: 3, height: 16, borderRadius: 2, background: color }} />
-                      <span style={{ fontSize: 12, fontWeight: 600, color: T.text }}>{name}</span>
-                    </div>
-                    <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-                      <span style={{ fontSize: 10, color: T.textTertiary }}>{fmtShort(val)}</span>
-                      <span style={{ fontSize: 13, fontWeight: 800, color: T.navy, fontFamily: "'JetBrains Mono', monospace", minWidth: 48, textAlign: "right" }}>{pct.toFixed(1)}%</span>
-                    </div>
-                  </div>
-                  <div style={{ height: 8, borderRadius: 4, background: T.surfaceAlt, overflow: "hidden" }}>
-                    <div style={{ height: "100%", width: `${barWidth}%`, borderRadius: 4, background: `linear-gradient(90deg, ${color}, ${color}BB)`, transition: "width .8s ease", boxShadow: `0 0 8px ${color}33` }} />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Por Tipo de Activo */}
-        <div style={{ ...card, padding: 0, overflow: "hidden" }}>
-          <div style={{ padding: "18px 24px", borderBottom: `1px solid ${T.borderLight}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <div style={{ width: 36, height: 36, borderRadius: 10, background: `linear-gradient(135deg, ${T.purpleLight}, ${T.amberLight})`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <span className="material-symbols-outlined" style={{ fontSize: 20, color: T.purple }}>precision_manufacturing</span>
-              </div>
-              <div>
-                <h3 style={{ fontSize: 14, fontWeight: 800, color: T.navy, margin: 0 }}>Concentración por Tipo de Activo</h3>
-                <p style={{ fontSize: 10, color: T.textTertiary, margin: "1px 0 0" }}>Distribución por tipo de bien financiado</p>
-              </div>
-            </div>
-            <div style={{ padding: "4px 12px", borderRadius: 20, background: T.purpleLight, fontSize: 11, fontWeight: 700, color: T.purple }}>{activosSorted.length} tipos</div>
-          </div>
-          <div style={{ padding: "16px 24px 20px" }}>
-            {activosSorted.map(([name, val], i) => {
-              const pct = (val / totalCartera * 100);
-              const barWidth = (val / maxActivo * 100);
-              const color = actColors[i % actColors.length];
-              return (
-                <div key={name} style={{ marginBottom: i < activosSorted.length - 1 ? 12 : 0 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 5 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <div style={{ width: 3, height: 16, borderRadius: 2, background: color }} />
-                      <span style={{ fontSize: 11, fontWeight: 600, color: T.text }}>{name}</span>
-                    </div>
-                    <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-                      <span style={{ fontSize: 10, color: T.textTertiary }}>{fmtShort(val)}</span>
-                      <span style={{ fontSize: 13, fontWeight: 800, color: T.navy, fontFamily: "'JetBrains Mono', monospace", minWidth: 48, textAlign: "right" }}>{pct.toFixed(1)}%</span>
-                    </div>
-                  </div>
-                  <div style={{ height: 8, borderRadius: 4, background: T.surfaceAlt, overflow: "hidden" }}>
-                    <div style={{ height: "100%", width: `${barWidth}%`, borderRadius: 4, background: `linear-gradient(90deg, ${color}, ${color}BB)`, transition: "width .8s ease", boxShadow: `0 0 8px ${color}33` }} />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        ))}
       </div>
+
     </div>
   );
 }
@@ -1857,6 +1808,11 @@ const PROVEEDORES_BY_BIEN = {
 
 const ASEGURADORAS = ["AXA Seguros", "GNP Seguros", "Mapfre Tepeyac", "Quálitas", "Chubb Seguros", "Zurich Santander"];
 const TIPOS_OPERACION = ["Nuevo", "Sale & Lease Back", "Reestructura"];
+// Distribución no uniforme por idx (simulación realista)
+// AXA: 7 · GNP: 5 · Mapfre: 4 · Quálitas: 3 · Chubb: 3 · Zurich: 2
+const ASEGURADORA_DIST = [0, 0, 1, 0, 2, 0, 1, 3, 0, 1, 4, 2, 0, 3, 1, 5, 2, 0, 4, 1, 5, 4, 2, 3];
+// Nuevo: 14 (58%) · Sale & Lease Back: 6 (25%) · Reestructura: 4 (17%)
+const TIPO_OP_DIST = [0, 0, 1, 0, 2, 0, 1, 0, 0, 1, 0, 2, 0, 1, 0, 0, 2, 0, 1, 0, 0, 1, 0, 2];
 
 const _today = new Date("2026-05-06");
 const _addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
@@ -1865,8 +1821,8 @@ const _iso = (d) => d.toISOString().slice(0, 10);
 const ASSETS_REPORT = QUANTO_OPS.map((op, i) => {
   const proveedoresList = PROVEEDORES_BY_BIEN[op.bien] || [{ nombre: "PROVEEDOR GENERAL S.A.", rfc: "PGE010101AAA", entidad: "CDMX" }];
   const proveedor = proveedoresList[i % proveedoresList.length];
-  const aseguradora = ASEGURADORAS[i % ASEGURADORAS.length];
-  const tipoOperacion = TIPOS_OPERACION[i % 3];
+  const aseguradora = ASEGURADORAS[ASEGURADORA_DIST[i % ASEGURADORA_DIST.length]];
+  const tipoOperacion = TIPOS_OPERACION[TIPO_OP_DIST[i % TIPO_OP_DIST.length]];
 
   const fechaDesembolso = new Date(op.fechaDesembolso);
   const fechaFact = _addDays(fechaDesembolso, -(15 + (i % 25)));
@@ -1940,7 +1896,7 @@ const daysFromToday = (dateStr) => {
 
 const polizaSemaforo = (days) => {
   if (days < 0) return { color: T.red, bg: T.redLight, label: "VENCIDA" };
-  if (days <= 30) return { color: "#EA580C", bg: "#FFEDD5", label: "CRÍTICA" };
+  if (days <= 30) return { color: "#7A4848", bg: "#F1ECE5", label: "CRÍTICA" };
   if (days <= 90) return { color: T.amber, bg: T.amberLight, label: "PRÓXIMA" };
   return { color: T.green, bg: T.greenLight, label: "VIGENTE" };
 };
@@ -1950,15 +1906,55 @@ const polizaSemaforo = (days) => {
 // ═══════════════════════════════════════════════
 const opCard = { background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: 18, boxShadow: T.shadow };
 
-function OpKpi({ label, value, sub, accent = T.navy, icon }) {
+function OpKpi({ label, value, sub, accent = T.navy, icon, gauge, onClick, glow }) {
+  const style = {
+    ...opCard,
+    cursor: onClick ? "pointer" : "default",
+    border: glow ? `2px solid ${accent}` : opCard.border,
+    boxShadow: glow ? `0 0 0 4px ${accent}22, 0 6px 20px ${accent}40, ${opCard.boxShadow}` : opCard.boxShadow,
+    transition: "transform .2s, box-shadow .2s",
+    fontFamily: "inherit",
+    textAlign: "left",
+    width: "100%",
+    position: "relative",
+  };
+  const Component = onClick ? "button" : "div";
   return (
-    <div style={opCard}>
+    <Component onClick={onClick} style={style}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
         {icon && <span className="material-symbols-outlined" style={{ fontSize: 16, color: accent }}>{icon}</span>}
         <span style={{ fontSize: 9, fontWeight: 800, color: T.textTertiary, textTransform: "uppercase", letterSpacing: 1.2 }}>{label}</span>
+        {onClick && <span className="material-symbols-outlined" style={{ fontSize: 14, color: accent, marginLeft: "auto" }}>arrow_forward</span>}
       </div>
       <div style={{ fontSize: 22, fontWeight: 900, color: accent, fontFamily: "'JetBrains Mono', monospace", lineHeight: 1.1 }}>{value}</div>
       {sub && <div style={{ fontSize: 11, color: T.textTertiary, marginTop: 4 }}>{sub}</div>}
+      {gauge && <RatioGauge {...gauge} />}
+    </Component>
+  );
+}
+
+function RatioGauge({ value, target, direction, scaleMin = 0, scaleMax, unit = "", ok }) {
+  const range = scaleMax - scaleMin;
+  const valuePct = Math.max(0, Math.min(((value - scaleMin) / range) * 100, 100));
+  const targetPct = Math.max(0, Math.min(((target - scaleMin) / range) * 100, 100));
+  const safeOnLeft = direction === "<";
+  const safeColor = T.green + "E6";
+  const dangerColor = T.red + "E6";
+  const arrowColor = ok ? T.green : T.amber;
+  return (
+    <div style={{ marginTop: 12 }}>
+      <div style={{ position: "relative", height: 18 }}>
+        <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 8, borderRadius: 4, overflow: "hidden", display: "flex", border: `1px solid ${T.borderLight}` }}>
+          <div style={{ width: `${targetPct}%`, background: safeOnLeft ? safeColor : dangerColor }} />
+          <div style={{ flex: 1, background: safeOnLeft ? dangerColor : safeColor }} />
+        </div>
+        <div style={{ position: "absolute", left: `${targetPct}%`, bottom: 0, height: 12, width: 2, background: T.navy, transform: "translateX(-1px)" }} />
+        <span style={{ position: "absolute", left: `${valuePct}%`, transform: "translateX(-50%)", top: -2, fontSize: 12, color: arrowColor, fontWeight: 900, lineHeight: 1, textShadow: "0 0 3px white, 0 0 3px white, 0 0 3px white" }}>▼</span>
+      </div>
+      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4, fontSize: 9, color: T.textTertiary, fontFamily: "'JetBrains Mono', monospace" }}>
+        <span>{scaleMin}{unit}</span>
+        <span>{scaleMax}{unit}</span>
+      </div>
     </div>
   );
 }
@@ -2045,7 +2041,35 @@ function StackedBar({ entries, palette }) {
   );
 }
 
-function ScrollTable({ columns, rows, gridCols, minWidth = 1100, renderCell }) {
+function ScrollTable({ columns, rows, gridCols, minWidth = 1100, renderCell, defaultSortCol = null, defaultSortDir = "asc" }) {
+  const [sortCol, setSortCol] = useState(defaultSortCol);
+  const [sortDir, setSortDir] = useState(defaultSortDir);
+
+  const sortedRows = useMemo(() => {
+    if (!sortCol) return rows;
+    const col = columns.find(c => c.id === sortCol);
+    const accessor = col?.sortValue || (r => r[sortCol]);
+    return [...rows].sort((a, b) => {
+      const va = accessor(a);
+      const vb = accessor(b);
+      if (va == null && vb == null) return 0;
+      if (va == null) return 1;
+      if (vb == null) return -1;
+      const na = typeof va === "string" ? va.toLowerCase() : va;
+      const nb = typeof vb === "string" ? vb.toLowerCase() : vb;
+      if (na < nb) return sortDir === "asc" ? -1 : 1;
+      if (na > nb) return sortDir === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [rows, sortCol, sortDir, columns]);
+
+  const handleSort = (id) => {
+    const col = columns.find(c => c.id === id);
+    if (col?.sortable === false) return;
+    if (sortCol === id) setSortDir(d => d === "asc" ? "desc" : "asc");
+    else { setSortCol(id); setSortDir(col?.defaultDir || "asc"); }
+  };
+
   return (
     <div style={{ ...opCard, padding: 0, position: "relative" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", padding: "6px 14px", borderBottom: `1px solid ${T.borderLight}`, background: T.surfaceAlt, fontSize: 9, fontWeight: 700, color: T.textTertiary, letterSpacing: 0.8, textTransform: "uppercase", gap: 6 }}>
@@ -2054,13 +2078,21 @@ function ScrollTable({ columns, rows, gridCols, minWidth = 1100, renderCell }) {
       </div>
       <div className="scroll-x" style={{ overflowX: "scroll", overflowY: "hidden" }}>
         <div style={{ minWidth, display: "grid", gridTemplateColumns: gridCols, padding: "12px 18px", borderBottom: `1px solid ${T.border}`, background: T.surfaceAlt, gap: 8 }}>
-          {columns.map(c => (
-            <span key={c.id} style={{ fontSize: 9, fontWeight: 800, color: T.textTertiary, textTransform: "uppercase", letterSpacing: 0.7 }}>{c.label}</span>
-          ))}
+          {columns.map(c => {
+            const active = sortCol === c.id;
+            const arrow = active ? (sortDir === "asc" ? "↑" : "↓") : "·";
+            const sortable = c.sortable !== false;
+            return (
+              <button key={c.id} onClick={() => handleSort(c.id)} disabled={!sortable} style={{ background: "none", border: "none", padding: 0, cursor: sortable ? "pointer" : "default", display: "flex", alignItems: "center", gap: 4, fontSize: 9, fontWeight: 800, color: active ? T.navy : T.textTertiary, textTransform: "uppercase", letterSpacing: 0.7, fontFamily: "inherit", textAlign: "left" }}>
+                {c.label}
+                {sortable && <span style={{ fontSize: 10, color: active ? T.blue : "transparent", fontWeight: 800 }}>{arrow}</span>}
+              </button>
+            );
+          })}
         </div>
-        {rows.length === 0 && <div style={{ padding: 30, textAlign: "center", color: T.textTertiary, fontSize: 12 }}>Sin registros</div>}
-        {rows.map((r, i) => (
-          <div key={r.id ?? i} style={{ minWidth, display: "grid", gridTemplateColumns: gridCols, padding: "11px 18px", borderBottom: i < rows.length - 1 ? `1px solid ${T.borderLight}` : "none", gap: 8, alignItems: "center", fontSize: 11 }}>
+        {sortedRows.length === 0 && <div style={{ padding: 30, textAlign: "center", color: T.textTertiary, fontSize: 12 }}>Sin registros</div>}
+        {sortedRows.map((r, i) => (
+          <div key={r.id ?? i} style={{ minWidth, display: "grid", gridTemplateColumns: gridCols, padding: "11px 18px", borderBottom: i < sortedRows.length - 1 ? `1px solid ${T.borderLight}` : "none", gap: 8, alignItems: "center", fontSize: 11 }}>
             {columns.map(c => <div key={c.id}>{renderCell(c, r)}</div>)}
           </div>
         ))}
@@ -2154,19 +2186,19 @@ function OperacionColocacionSection() {
   const entidades = data2026.reduce((acc, a) => { acc[a.entidadFederativa] = (acc[a.entidadFederativa] || 0) + 1; return acc; }, {});
   const entidadEntries = Object.entries(entidades).sort((a, b) => b[1] - a[1]).map(([k, v]) => ({ label: k, value: v }));
 
-  const palette = [T.blue, T.green, T.amber, T.purple, T.red, "#06B6D4", "#EC4899", T.navy, "#F59E0B", "#10B981"];
+  const palette = [T.blue, T.green, T.amber, T.purple, T.red, "#688CB3", "#9A8AAB", T.navy, "#8B7355", "#7A9684"];
 
   const columns = [
-    { id: "contrato", label: "Contrato" },
-    { id: "acreditada", label: "Acreditada" },
+    { id: "contrato", label: "Contrato", sortValue: r => r.contratoAnexo },
+    { id: "acreditada", label: "Acreditada", sortValue: r => r.acreditadaCorta },
     { id: "fechaDesembolso", label: "Desembolso" },
     { id: "fecha1erPago", label: "1er Pago" },
     { id: "vencimiento", label: "Vencimiento" },
-    { id: "valorBienSinIVA", label: "Valor s/IVA" },
-    { id: "valorFactura", label: "Valor Fact." },
-    { id: "plazo", label: "Plazo" },
-    { id: "rentaMensual", label: "Renta" },
-    { id: "entidad", label: "Entidad" },
+    { id: "valorBienSinIVA", label: "Valor s/IVA", defaultDir: "desc" },
+    { id: "valorFactura", label: "Valor Fact.", defaultDir: "desc" },
+    { id: "plazo", label: "Plazo", defaultDir: "desc" },
+    { id: "rentaMensual", label: "Renta", defaultDir: "desc" },
+    { id: "entidad", label: "Entidad", sortValue: r => r.entidadFederativa },
   ];
 
   const renderCell = (c, r) => {
@@ -2254,17 +2286,17 @@ function OperacionSegurosSection() {
     porAsegTipo[a.aseguradora][a.tipoActivo] = (porAsegTipo[a.aseguradora][a.tipoActivo] || 0) + 1;
   });
 
-  const palette = [T.blue, T.green, T.amber, T.purple, T.red, "#06B6D4", "#EC4899", T.navy];
+  const palette = [T.blue, T.green, T.amber, T.purple, T.red, "#688CB3", "#9A8AAB", T.navy];
 
   const columns = [
-    { id: "estatus", label: "Estatus" },
-    { id: "acreditada", label: "Acreditada" },
-    { id: "contrato", label: "Contrato" },
+    { id: "estatus", label: "Estatus", sortValue: r => daysFromToday(r.fechaVencimientoPoliza) },
+    { id: "acreditada", label: "Acreditada", sortValue: r => r.acreditadaCorta },
+    { id: "contrato", label: "Contrato", sortValue: r => r.contratoAnexo },
     { id: "tipoActivo", label: "Tipo Activo" },
-    { id: "descripcion", label: "Descripción" },
-    { id: "serie", label: "N° Serie" },
-    { id: "poliza", label: "N° Póliza" },
-    { id: "venc", label: "Venc. Póliza" },
+    { id: "descripcion", label: "Descripción", sortValue: r => r.descripcionActivo },
+    { id: "serie", label: "N° Serie", sortValue: r => r.numeroSerie },
+    { id: "poliza", label: "N° Póliza", sortValue: r => r.numeroPoliza },
+    { id: "venc", label: "Venc. Póliza", sortValue: r => r.fechaVencimientoPoliza },
     { id: "aseguradora", label: "Aseguradora" },
   ];
 
@@ -2292,7 +2324,7 @@ function OperacionSegurosSection() {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
         <OpKpi icon="shield" label="Pólizas activas" value={`${total - polizasVencidas}`} sub={`${total} totales`} accent={T.green} />
         <OpKpi icon="warning" label="Vencidas" value={polizasVencidas.toString()} accent={T.red} />
-        <OpKpi icon="schedule" label="Críticas (≤30 días)" value={polizas30.toString()} accent="#EA580C" />
+        <OpKpi icon="schedule" label="Críticas (≤30 días)" value={polizas30.toString()} accent="#7A4848" />
         <OpKpi icon="event_upcoming" label="Próximas (31–90 días)" value={polizas90.toString()} accent={T.amber} />
         <OpKpi icon="verified" label="Vigentes (>90 días)" value={polizasVigentes.toString()} accent={T.green} />
       </div>
@@ -2324,7 +2356,7 @@ function OperacionSegurosSection() {
           <div style={{ display: "flex", gap: 10, fontSize: 10, color: T.textSecondary }}>
             <span style={{ display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 8, height: 8, borderRadius: 2, background: T.green }} />Vigente</span>
             <span style={{ display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 8, height: 8, borderRadius: 2, background: T.amber }} />Próxima</span>
-            <span style={{ display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 8, height: 8, borderRadius: 2, background: "#EA580C" }} />Crítica</span>
+            <span style={{ display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 8, height: 8, borderRadius: 2, background: "#7A4848" }} />Crítica</span>
             <span style={{ display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 8, height: 8, borderRadius: 2, background: T.red }} />Vencida</span>
           </div>
         </div>
@@ -2372,25 +2404,25 @@ function OperacionFacturacionSection() {
   ];
   const bucketData = buckets.map(b => ({ label: b.label, value: ASSETS_REPORT.filter(a => a.tiempoPagoDias >= b.min && a.tiempoPagoDias <= b.max).length }));
 
-  const palette = [T.blue, T.green, T.amber, T.purple, T.red, "#06B6D4", "#EC4899", T.navy];
+  const palette = [T.blue, T.green, T.amber, T.purple, T.red, "#688CB3", "#9A8AAB", T.navy];
 
   const columns = [
-    { id: "acreditada", label: "Acreditada" },
-    { id: "contrato", label: "Contrato" },
+    { id: "acreditada", label: "Acreditada", sortValue: r => r.acreditadaCorta },
+    { id: "contrato", label: "Contrato", sortValue: r => r.contratoAnexo },
     { id: "tipoActivo", label: "Tipo Activo" },
-    { id: "tipoOp", label: "Operación" },
+    { id: "tipoOp", label: "Operación", sortValue: r => r.tipoOperacion },
     { id: "proveedor", label: "Proveedor" },
-    { id: "rfc", label: "RFC" },
-    { id: "entidadProv", label: "Entidad Prov." },
-    { id: "fechaFact", label: "Fecha Factura" },
+    { id: "rfc", label: "RFC", sortValue: r => r.rfcProveedor },
+    { id: "entidadProv", label: "Entidad Prov.", sortValue: r => r.entidadProveedor },
+    { id: "fechaFact", label: "Fecha Factura", sortValue: r => r.fechaFacturacion },
     { id: "factura", label: "Factura" },
-    { id: "folio", label: "Folio Fiscal" },
-    { id: "valorFact", label: "Valor c/IVA" },
+    { id: "folio", label: "Folio Fiscal", sortValue: r => r.folioFiscal },
+    { id: "valorFact", label: "Valor c/IVA", sortValue: r => r.valorFactura, defaultDir: "desc" },
     { id: "moneda", label: "Mon." },
-    { id: "accesorios", label: "Accesorios" },
+    { id: "accesorios", label: "Accesorios", sortValue: r => r.valorAccesorios, defaultDir: "desc" },
     { id: "fechaPago", label: "Fecha Pago" },
-    { id: "diasPago", label: "Días" },
-    { id: "fechaComp", label: "Comp. Pago" },
+    { id: "diasPago", label: "Días", sortValue: r => r.tiempoPagoDias, defaultDir: "desc" },
+    { id: "fechaComp", label: "Comp. Pago", sortValue: r => r.fechaComplementoPago },
   ];
 
   const renderCell = (c, r) => {
@@ -2489,21 +2521,21 @@ function OperacionVencimientosSection() {
   });
   const ventaTipoEntries = Object.entries(ventaPorTipo).map(([k, v]) => ({ label: k.length > 26 ? k.slice(0,24) + "…" : k, value: Math.round(v.sum / v.count), count: v.count })).sort((a, b) => b.value - a.value);
 
-  const palette = [T.green, T.blue, T.amber, T.purple, T.red, "#06B6D4", "#EC4899", T.navy];
+  const palette = [T.green, T.blue, T.amber, T.purple, T.red, "#688CB3", "#9A8AAB", T.navy];
   const tipoOpPalette = { "Nuevo": T.green, "Sale & Lease Back": T.blue, "Reestructura": T.amber };
 
   const columns = [
-    { id: "acreditada", label: "Acreditada" },
-    { id: "contrato", label: "Contrato" },
+    { id: "acreditada", label: "Acreditada", sortValue: r => r.acreditadaCorta },
+    { id: "contrato", label: "Contrato", sortValue: r => r.contratoAnexo },
     { id: "tipoActivo", label: "Tipo Activo" },
-    { id: "tipoOp", label: "Operación" },
+    { id: "tipoOp", label: "Operación", sortValue: r => r.tipoOperacion },
     { id: "factura", label: "Factura" },
-    { id: "folio", label: "Folio Fiscal" },
-    { id: "valor", label: "Valor c/IVA" },
+    { id: "folio", label: "Folio Fiscal", sortValue: r => r.folioFiscal },
+    { id: "valor", label: "Valor c/IVA", sortValue: r => r.valorFactura, defaultDir: "desc" },
     { id: "vencimiento", label: "Vencimiento" },
-    { id: "termino", label: "Término (Venta)" },
-    { id: "diasVenta", label: "Días Venta" },
-    { id: "receptor", label: "Receptor" },
+    { id: "termino", label: "Término (Venta)", sortValue: r => r.fechaTerminoVenta || "" },
+    { id: "diasVenta", label: "Días Venta", sortValue: r => r.fechaTerminoVenta ? Math.round((new Date(r.fechaTerminoVenta) - new Date(r.vencimiento)) / 86400000) : null, defaultDir: "desc" },
+    { id: "receptor", label: "Receptor", sortValue: r => r.receptorTermino || "" },
   ];
 
   const renderCell = (c, r) => {
@@ -2578,7 +2610,7 @@ const CRM_ETAPAS = [
   { id: "Prospección", color: T.blue, bg: T.blueLight },
   { id: "Propuesta", color: T.purple, bg: T.purpleLight },
   { id: "Negociación", color: T.amber, bg: T.amberLight },
-  { id: "Cierre", color: "#0E7490", bg: "#CFFAFE" },
+  { id: "Cierre", color: "#3D6792", bg: "#A8C2DC" },
   { id: "Ganada", color: T.green, bg: T.greenLight },
   { id: "Perdida", color: T.red, bg: T.redLight },
   { id: "No calificó", color: "#6B7280", bg: "#F3F4F6" },
@@ -2647,6 +2679,8 @@ function CrmPipelineSection({ deals, activities, onAddDeal, onUpdateDeal, onAddA
   const [filterEtapa, setFilterEtapa] = useState("todas");
   const [selectedId, setSelectedId] = useState(null);
   const [showNewLead, setShowNewLead] = useState(false);
+  const [sortCol, setSortCol] = useState(null);
+  const [sortDir, setSortDir] = useState("asc"); // asc | desc
 
   const filtered = deals.filter(d => {
     if (search) {
@@ -2657,6 +2691,27 @@ function CrmPipelineSection({ deals, activities, onAddDeal, onUpdateDeal, onAddA
     if (filterEtapa !== "todas" && d.etapa !== filterEtapa) return false;
     return true;
   });
+
+  const sortAccessors = {
+    empresa: d => d.empresa.toLowerCase(),
+    etapa: d => CRM_ETAPAS.findIndex(s => s.id === d.etapa),
+    activo: d => d.activo.cat.toLowerCase(),
+    ejecutivo: d => d.ejecutivo.toLowerCase(),
+    monto: d => d.activo.monto,
+    renta: d => d.contrato ? d.contrato.renta : 0,
+    score: d => d.ai.score,
+  };
+  const sortedTabla = sortCol ? [...filtered].sort((a, b) => {
+    const va = sortAccessors[sortCol](a);
+    const vb = sortAccessors[sortCol](b);
+    if (va < vb) return sortDir === "asc" ? -1 : 1;
+    if (va > vb) return sortDir === "asc" ? 1 : -1;
+    return 0;
+  }) : filtered;
+  const handleSortTabla = (col) => {
+    if (sortCol === col) setSortDir(d => d === "asc" ? "desc" : "asc");
+    else { setSortCol(col); setSortDir(["score", "monto", "renta"].includes(col) ? "desc" : "asc"); }
+  };
 
   const activeStages = ["Prospección", "Propuesta", "Negociación", "Cierre"];
   const activos = filtered.filter(d => activeStages.includes(d.etapa));
@@ -2674,11 +2729,11 @@ function CrmPipelineSection({ deals, activities, onAddDeal, onUpdateDeal, onAddA
 
       {/* KPIs */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
-        <OpKpi icon="hub" label="Pipeline activo" value={fmtShort(pipelineMonto)} sub={`${activos.length} operaciones`} accent={T.blue} />
-        <OpKpi icon="check_circle" label="Ganadas" value={ganadas.toString()} accent={T.green} />
-        <OpKpi icon="cancel" label="Perdidas" value={perdidas.toString()} accent={T.red} />
-        <OpKpi icon="conversion_path" label="Conversión" value={`${conversionPct.toFixed(0)}%`} accent={T.purple} sub={`${ganadas} de ${ganadas + perdidas}`} />
-        <OpKpi icon="payments" label="Ticket promedio" value={fmtShort(ticketProm)} accent={T.amber} />
+        <OpKpi icon="hub" label="Pipeline activo" value={fmtShort(pipelineMonto)} sub={`${activos.length} operaciones`} accent={T.navy} />
+        <OpKpi icon="check_circle" label="Ganadas" value={ganadas.toString()} accent="#4A6B5C" />
+        <OpKpi icon="cancel" label="Perdidas" value={perdidas.toString()} accent="#7A4848" />
+        <OpKpi icon="conversion_path" label="Conversión" value={`${conversionPct.toFixed(0)}%`} accent="#3D6792" sub={`${ganadas} de ${ganadas + perdidas}`} />
+        <OpKpi icon="payments" label="Ticket promedio" value={fmtShort(ticketProm)} accent="#8B7355" />
       </div>
 
       {/* Filters + view toggle */}
@@ -2753,33 +2808,68 @@ function CrmPipelineSection({ deals, activities, onAddDeal, onUpdateDeal, onAddA
       {/* Tabla view */}
       {view === "tabla" && (
         <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radius, overflow: "hidden", boxShadow: T.shadow, overflowX: "auto" }}>
-          <div style={{ minWidth: 1100, display: "grid", gridTemplateColumns: "minmax(180px, 1.6fr) 130px minmax(140px, 1fr) 130px 110px 110px 110px 60px", padding: "11px 18px", borderBottom: `1px solid ${T.border}`, background: T.surfaceAlt, gap: 8 }}>
-            {["Empresa", "Etapa", "Activo", "Ejecutivo", "Monto", "Renta", "Acercamiento", "IA"].map(h => (
-              <span key={h} style={{ fontSize: 9, fontWeight: 800, color: T.textTertiary, textTransform: "uppercase", letterSpacing: 0.7 }}>{h}</span>
-            ))}
-          </div>
-          {filtered.length === 0 && <div style={{ padding: 30, textAlign: "center", color: T.textTertiary, fontSize: 12 }}>Sin resultados</div>}
-          {filtered.map((d, i) => {
-            const stage = etapaConfig(d.etapa);
-            const aiBg = d.ai.score >= 80 ? T.greenLight : d.ai.score >= 60 ? T.amberLight : T.redLight;
-            const aiCol = d.ai.score >= 80 ? T.green : d.ai.score >= 60 ? T.amber : T.red;
+          {(() => {
+            const cols = [
+              { id: "empresa", label: "Empresa", width: "minmax(180px, 1.6fr)", align: "flex-start" },
+              { id: "etapa", label: "Etapa", width: "130px", align: "flex-start" },
+              { id: "activo", label: "Activo", width: "minmax(140px, 1fr)", align: "flex-start" },
+              { id: "ejecutivo", label: "Ejecutivo", width: "130px", align: "flex-start" },
+              { id: "monto", label: "Monto", width: "110px", align: "flex-end" },
+              { id: "renta", label: "Renta", width: "110px", align: "flex-end" },
+              { id: "score", label: "Score", width: "90px", align: "center" },
+            ];
+            const gridTemplate = cols.map(c => c.width).join(" ");
+            const rows = sortedTabla.length === 0
+              ? [<div key="empty" style={{ gridColumn: `1 / -1`, padding: 30, textAlign: "center", color: T.textTertiary, fontSize: 12 }}>Sin resultados</div>]
+              : sortedTabla.flatMap((d, i) => {
+                  const stage = etapaConfig(d.etapa);
+                  const aiBg = d.ai.score >= 80 ? T.greenLight : d.ai.score >= 60 ? T.amberLight : T.redLight;
+                  const aiCol = d.ai.score >= 80 ? T.green : d.ai.score >= 60 ? T.amber : T.red;
+                  const isLast = i === sortedTabla.length - 1;
+                  const onRowClick = () => setSelectedId(d.id === selectedId ? null : d.id);
+                  const rowBg = selectedId === d.id ? T.blueLight : "transparent";
+                  const cellStyle = (justify) => ({ display: "flex", alignItems: "center", justifyContent: justify, minWidth: 0, padding: "12px 0", borderBottom: isLast ? "none" : `1px solid ${T.borderLight}`, background: rowBg, cursor: "pointer" });
+                  return [
+                    <div key={`${d.id}-empresa`} onClick={onRowClick} style={{ ...cellStyle("flex-start"), flexDirection: "column", alignItems: "flex-start", paddingLeft: 18 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: T.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>{d.empresa}</div>
+                      <div style={{ fontSize: 10, color: T.text, fontFamily: "'JetBrains Mono', monospace" }}>{d.rfc}</div>
+                    </div>,
+                    <div key={`${d.id}-etapa`} onClick={onRowClick} style={cellStyle("flex-start")}>
+                      <span style={{ fontSize: 10, padding: "3px 9px", borderRadius: 12, background: stage.bg, color: T.text, fontWeight: 800 }}>{d.etapa}</span>
+                    </div>,
+                    <div key={`${d.id}-activo`} onClick={onRowClick} style={cellStyle("flex-start")}>
+                      <span style={{ fontSize: 11, color: T.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{d.activo.cat}</span>
+                    </div>,
+                    <div key={`${d.id}-ejecutivo`} onClick={onRowClick} style={cellStyle("flex-start")}>
+                      <span style={{ fontSize: 11, color: T.text }}>{d.ejecutivo}</span>
+                    </div>,
+                    <div key={`${d.id}-monto`} onClick={onRowClick} style={cellStyle("flex-end")}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: T.text, fontFamily: "'JetBrains Mono', monospace" }}>{fmtShort(d.activo.monto)}</span>
+                    </div>,
+                    <div key={`${d.id}-renta`} onClick={onRowClick} style={cellStyle("flex-end")}>
+                      <span style={{ fontSize: 11, color: T.text, fontFamily: "'JetBrains Mono', monospace" }}>{d.contrato ? fmtShort(d.contrato.renta) : "—"}</span>
+                    </div>,
+                    <div key={`${d.id}-score`} onClick={onRowClick} style={{ ...cellStyle("center"), paddingRight: 18 }}>
+                      <span style={{ fontSize: 11, fontWeight: 800, padding: "4px 10px", borderRadius: 4, background: aiBg, color: T.text, fontFamily: "'JetBrains Mono', monospace" }}>{d.ai.score}</span>
+                    </div>,
+                  ];
+                });
             return (
-              <button key={d.id} onClick={() => setSelectedId(d.id === selectedId ? null : d.id)} className="hover-row"
-                style={{ minWidth: 1100, display: "grid", gridTemplateColumns: "minmax(180px, 1.6fr) 130px minmax(140px, 1fr) 130px 110px 110px 110px 60px", padding: "12px 18px", borderBottom: i < filtered.length - 1 ? `1px solid ${T.borderLight}` : "none", gap: 8, alignItems: "center", textAlign: "left", background: selectedId === d.id ? T.blueLight : "transparent", border: "none", cursor: "pointer", fontFamily: "inherit" }}>
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: T.navy, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{d.empresa}</div>
-                  <div style={{ fontSize: 10, color: T.textTertiary, fontFamily: "'JetBrains Mono', monospace" }}>{d.rfc}</div>
-                </div>
-                <span style={{ fontSize: 10, padding: "3px 9px", borderRadius: 12, background: stage.bg, color: stage.color, fontWeight: 800, justifySelf: "start" }}>{d.etapa}</span>
-                <span style={{ fontSize: 11, color: T.textSecondary, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{d.activo.cat}</span>
-                <span style={{ fontSize: 11, color: T.text }}>{d.ejecutivo}</span>
-                <span style={{ fontSize: 11, fontWeight: 700, color: T.navy, fontFamily: "'JetBrains Mono', monospace" }}>{fmtShort(d.activo.monto)}</span>
-                <span style={{ fontSize: 11, color: T.textSecondary, fontFamily: "'JetBrains Mono', monospace" }}>{d.contrato ? fmtShort(d.contrato.renta) : "—"}</span>
-                <span style={{ fontSize: 10, color: T.textTertiary, fontFamily: "'JetBrains Mono', monospace" }}>{d.fechaAcercamiento}</span>
-                <span style={{ fontSize: 11, fontWeight: 800, padding: "3px 7px", borderRadius: 4, background: aiBg, color: aiCol, fontFamily: "'JetBrains Mono', monospace", textAlign: "center" }}>{d.ai.score}</span>
-              </button>
+              <div style={{ minWidth: 1000, display: "grid", gridTemplateColumns: gridTemplate, columnGap: 8 }}>
+                {cols.map((h, idx) => {
+                  const active = sortCol === h.id;
+                  const arrow = active ? (sortDir === "asc" ? "↑" : "↓") : "·";
+                  return (
+                    <button key={h.id} onClick={() => handleSortTabla(h.id)} style={{ background: T.surfaceAlt, border: "none", borderBottom: `1px solid ${T.border}`, padding: `11px ${idx === 0 ? 18 : 0}px 11px ${idx === 0 ? 18 : 0}px`, paddingRight: idx === cols.length - 1 ? 18 : 0, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: h.align, gap: 4, fontSize: 9, fontWeight: 800, color: active ? T.navy : T.textTertiary, textTransform: "uppercase", letterSpacing: 0.7, fontFamily: "inherit" }}>
+                      {h.label}
+                      <span style={{ fontSize: 10, color: active ? T.blue : "transparent", fontWeight: 800 }}>{arrow}</span>
+                    </button>
+                  );
+                })}
+                {rows}
+              </div>
             );
-          })}
+          })()}
         </div>
       )}
     </div>
@@ -3241,7 +3331,7 @@ function ReporteActividad({ deals, activities }) {
         <OpKpi icon="folder_managed" label="Expedientes" value={totalExp.toString()} accent={T.amber} />
         <OpKpi icon="check_circle" label="Autorizaciones" value={totalAuto.toString()} accent={T.green} />
         <OpKpi icon="hub" label="Brokers activos" value={brokersAct.toString()} accent={T.navy} />
-        <OpKpi icon="handshake" label="Alianzas activas" value={alianzasAct.toString()} accent="#0E7490" />
+        <OpKpi icon="handshake" label="Alianzas activas" value={alianzasAct.toString()} accent="#3D6792" />
       </div>
 
       <div style={opCard}>
@@ -3653,7 +3743,7 @@ function RiesgosPanoramaSection({ onSelectClient }) {
   CLIENTS.forEach(c => {
     if (c.calificacion.score < 650) alertas.push({ tipo: "score", color: T.red, cliente: c, texto: `Score ${c.calificacion.score} bajo umbral preferente`, severidad: 3 });
     if (c.estadoCuenta.cobertura < 6) alertas.push({ tipo: "cobertura", color: T.amber, cliente: c, texto: `Cobertura ${c.estadoCuenta.cobertura.toFixed(1)}× ajustada`, severidad: 2 });
-    if (c.diasParaPago <= 3) alertas.push({ tipo: "pago", color: "#EA580C", cliente: c, texto: `Próximo pago en ${c.diasParaPago}d`, severidad: 2 });
+    if (c.diasParaPago <= 3) alertas.push({ tipo: "pago", color: "#7A4848", cliente: c, texto: `Próximo pago en ${c.diasParaPago}d`, severidad: 2 });
     const warningChecks = c.calificacion.checks.filter(ch => ch.status === "warning").length;
     if (warningChecks >= 2) alertas.push({ tipo: "checks", color: T.amber, cliente: c, texto: `${warningChecks} alertas en calificación`, severidad: 2 });
   });
@@ -3814,7 +3904,7 @@ function RiesgosExpedientesSection({ onSelectClient }) {
                 <div style={{ display: "flex", gap: 6, marginTop: 12, flexWrap: "wrap" }}>
                   <span style={{ fontSize: 9, padding: "2px 7px", borderRadius: 3, background: T.surfaceAlt, color: T.textSecondary, fontWeight: 700 }}>{c.actividad}</span>
                   {warningChecks > 0 && <span style={{ fontSize: 9, padding: "2px 7px", borderRadius: 3, background: T.amberLight, color: T.amber, fontWeight: 700 }}>⚠ {warningChecks} alertas</span>}
-                  {c.diasParaPago <= 7 && <span style={{ fontSize: 9, padding: "2px 7px", borderRadius: 3, background: "#FFEDD5", color: "#EA580C", fontWeight: 700 }}>Pago en {c.diasParaPago}d</span>}
+                  {c.diasParaPago <= 7 && <span style={{ fontSize: 9, padding: "2px 7px", borderRadius: 3, background: "#F1ECE5", color: "#7A4848", fontWeight: 700 }}>Pago en {c.diasParaPago}d</span>}
                 </div>
               </div>
 
@@ -3880,7 +3970,7 @@ function RiesgosAnalisisSection() {
             <span className="material-symbols-outlined">psychology</span>
           </div>
           <div>
-            <h3 style={{ fontSize: 15, fontWeight: 800, color: T.navy, margin: 0 }}>Análisis cruzado con IA</h3>
+            <h3 style={{ fontSize: 15, fontWeight: 800, color: T.navy, margin: 0 }}>Análisis cruzados</h3>
             <p style={{ fontSize: 11, color: T.textSecondary, margin: "2px 0 0" }}>Cruza estados financieros, historial de pagos y dinámica del sector para generar recomendaciones para el equipo de Riesgos.</p>
           </div>
         </div>
@@ -4026,22 +4116,124 @@ const DASH_FIN_SECTORES = [
 // DASHBOARD FINANCIERO — UI HELPERS
 // ═══════════════════════════════════════════════
 function PnlCascade({ items }) {
-  const max = Math.max(...items.map(i => Math.abs(i.value)));
+  const totalIngresos = items.find(i => i.label === "TOTAL INGRESOS")?.value || 1;
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+    <div style={{ display: "flex", flexDirection: "column" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 120px 70px", gap: 16, padding: "0 14px 8px", borderBottom: `1px solid ${T.border}` }}>
+        <span style={{ fontSize: 9.5, fontWeight: 700, color: T.textTertiary, letterSpacing: 0.8, textTransform: "uppercase" }}>Concepto</span>
+        <span style={{ fontSize: 9.5, fontWeight: 700, color: T.textTertiary, letterSpacing: 0.8, textTransform: "uppercase", textAlign: "right" }}>Importe</span>
+        <span style={{ fontSize: 9.5, fontWeight: 700, color: T.textTertiary, letterSpacing: 0.8, textTransform: "uppercase", textAlign: "right" }}>% Ingresos</span>
+      </div>
       {items.map((item, i) => {
         const isTotal = item.type === "total";
         const isSub = item.type === "sub";
+        const isOut = item.type === "out";
         const big = isTotal || isSub;
-        const color = item.type === "in" ? T.green : item.type === "out" ? T.red : item.type === "sub" ? T.blue : T.navy;
-        const bg = item.type === "in" ? T.greenLight : item.type === "out" ? T.redLight : item.type === "sub" ? T.blueLight : T.surfaceAlt;
-        const pct = (Math.abs(item.value) / max) * 100;
+        const valueColor = big ? T.navy : isOut ? T.red : T.text;
+        const pct = (item.value / totalIngresos) * 100;
+        const pctFmt = `${pct < 0 ? "(" : ""}${Math.abs(pct).toFixed(1)}%${pct < 0 ? ")" : ""}`;
+        const isNeg = item.value < 0;
         return (
-          <div key={i} style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.4fr) 110px minmax(0, 1.4fr)", gap: 12, alignItems: "center", padding: big ? "10px 12px" : "5px 12px", borderTop: big ? `1px solid ${T.border}` : "none", marginTop: big ? 4 : 0, background: isTotal ? bg : "transparent", borderRadius: isTotal ? T.radiusSm : 0 }}>
-            <span style={{ fontSize: big ? 13 : 11.5, fontWeight: big ? 800 : 500, color: big ? T.navy : T.text, letterSpacing: isTotal ? 0.4 : 0, textTransform: isTotal ? "uppercase" : "none" }}>{item.label}</span>
-            <span style={{ fontSize: big ? 14 : 12, fontWeight: 800, color, fontFamily: "'JetBrains Mono', monospace", textAlign: "right" }}>{item.value < 0 ? "-" : ""}{fmtShort(Math.abs(item.value) * 1000)}</span>
-            <div style={{ height: big ? 9 : 5, borderRadius: 3, background: T.surfaceAlt, overflow: "hidden" }}>
-              <div style={{ height: "100%", width: `${pct}%`, background: color, borderRadius: 3, transition: "width .8s ease" }} />
+          <div key={i} style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 120px 70px",
+            gap: 16,
+            alignItems: "baseline",
+            padding: big ? "11px 14px" : "6px 14px",
+            borderTop: big ? `1px solid ${T.border}` : "none",
+            borderBottom: isTotal ? `2px solid ${T.navy}` : "none",
+            background: isTotal ? T.surfaceAlt : "transparent",
+            marginTop: big ? 4 : 0,
+          }}>
+            <span style={{
+              fontSize: big ? 12 : 11.5,
+              fontWeight: big ? 800 : 500,
+              color: big ? T.navy : T.text,
+              letterSpacing: big ? 0.5 : 0,
+              textTransform: big ? "uppercase" : "none",
+              paddingLeft: big ? 0 : 14,
+            }}>{item.label}</span>
+            <span style={{
+              fontSize: big ? 13 : 12,
+              fontWeight: big ? 800 : 600,
+              color: valueColor,
+              fontFamily: "'JetBrains Mono', monospace",
+              textAlign: "right",
+              fontVariantNumeric: "tabular-nums",
+            }}>{isNeg ? "(" : ""}{fmtShort(Math.abs(item.value) * 1000)}{isNeg ? ")" : ""}</span>
+            <span style={{
+              fontSize: 10.5,
+              fontWeight: big ? 700 : 500,
+              color: big ? T.textSecondary : T.textTertiary,
+              fontFamily: "'JetBrains Mono', monospace",
+              textAlign: "right",
+              fontVariantNumeric: "tabular-nums",
+            }}>{pctFmt}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function BalanceColumn({ title, rows, total, totalLabel }) {
+  const fmtBal = v => Math.abs(Math.round(v)).toLocaleString("en-US");
+  return (
+    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+      <div style={{ fontSize: 11, fontWeight: 800, color: T.navy, letterSpacing: 0.8, textTransform: "uppercase", paddingBottom: 8, borderBottom: `2px solid ${T.navy}`, marginBottom: 4 }}>{title}</div>
+      <div style={{ display: "flex", flexDirection: "column" }}>
+        {rows.map((r, i) => {
+          if (r.type === "section") {
+            return (
+              <div key={i} style={{ fontSize: 10, fontWeight: 700, color: T.textSecondary, letterSpacing: 0.6, textTransform: "uppercase", padding: "10px 0 4px", borderTop: i > 0 ? `1px solid ${T.borderLight}` : "none", marginTop: i > 0 ? 4 : 0 }}>{r.label}</div>
+            );
+          }
+          if (r.type === "subtotal") {
+            const isNeg = r.value < 0;
+            return (
+              <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr auto", padding: "8px 12px", borderTop: `1px solid ${T.border}`, marginTop: 4, background: T.surfaceAlt, borderRadius: T.radiusSm, alignItems: "baseline" }}>
+                <span style={{ fontSize: 11, fontWeight: 800, color: T.navy, letterSpacing: 0.4, textTransform: "uppercase" }}>{r.label}</span>
+                <span style={{ fontSize: 12, fontWeight: 800, color: T.navy, fontFamily: "'JetBrains Mono', monospace", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
+                  {isNeg ? "(" : ""}${fmtBal(r.value)}{isNeg ? ")" : ""}
+                </span>
+              </div>
+            );
+          }
+          const isNeg = r.value < 0;
+          return (
+            <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr auto", padding: "5px 12px", alignItems: "baseline" }}>
+              <span style={{ fontSize: 11.5, color: T.text }}>{r.label}</span>
+              <span style={{ fontSize: 12, fontWeight: 600, color: isNeg ? T.red : T.text, fontFamily: "'JetBrains Mono', monospace", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
+                {isNeg ? "(" : ""}${fmtBal(r.value)}{isNeg ? ")" : ""}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr auto", padding: "11px 12px", borderTop: `1px solid ${T.border}`, borderBottom: `3px double ${T.navy}`, background: T.surfaceAlt, marginTop: "auto", alignItems: "baseline" }}>
+        <span style={{ fontSize: 12, fontWeight: 800, color: T.navy, letterSpacing: 0.5, textTransform: "uppercase" }}>{totalLabel}</span>
+        <span style={{ fontSize: 13.5, fontWeight: 900, color: T.navy, fontFamily: "'JetBrains Mono', monospace", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>${fmtBal(total)}</span>
+      </div>
+    </div>
+  );
+}
+
+function HBarComposition({ entries }) {
+  const total = entries.reduce((s, e) => s + e.value, 0) || 1;
+  const max = Math.max(...entries.map(e => e.value));
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      {entries.map((e, i) => {
+        const pct = (e.value / total) * 100;
+        const barPct = (e.value / max) * 100;
+        return (
+          <div key={e.label} style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
+              <span style={{ fontSize: 11.5, fontWeight: 600, color: T.text }}>{e.label}</span>
+              <span style={{ fontSize: 12, fontWeight: 800, color: T.navy, fontFamily: "'JetBrains Mono', monospace", fontVariantNumeric: "tabular-nums" }}>{pct.toFixed(1)}%</span>
+            </div>
+            <div style={{ height: 6, borderRadius: 3, background: T.surfaceAlt, overflow: "hidden" }}>
+              <div style={{ height: "100%", width: `${barPct}%`, background: T.navy, borderRadius: 3, transition: "width .8s ease" }} />
             </div>
           </div>
         );
@@ -4079,25 +4271,48 @@ function GroupedBars({ data, series, height = 130, valueFormatter = (n) => fmtSh
   );
 }
 
-function AreaTrend({ data, color = T.blue, height = 90 }) {
+function AreaTrend({ data, color = T.blue, height = 200, formatValue = v => `$${(v / 1000).toFixed(2)}B` }) {
   const max = Math.max(...data.map(d => d.v));
   const min = Math.min(...data.map(d => d.v));
   const range = max - min || 1;
+  const yPct = (v) => 100 - ((v - min) / range) * 100;
   const w = 100 / Math.max(data.length - 1, 1);
-  const points = data.map((d, i) => `${i * w},${100 - ((d.v - min) / range) * 88 - 6}`).join(" ");
+  const points = data.map((d, i) => `${i * w},${yPct(d.v)}`).join(" ");
   const areaPath = `0,100 ${points} 100,100`;
+  const valueTopPad = 22;
   return (
-    <div style={{ position: "relative" }}>
-      <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ width: "100%", height, display: "block" }}>
-        <polygon points={areaPath} fill={color} fillOpacity="0.15" />
-        <polyline points={points} fill="none" stroke={color} strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
+    <div>
+      <div style={{ position: "relative", height: height + valueTopPad }}>
+        <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ position: "absolute", top: valueTopPad, left: 0, width: "100%", height, display: "block" }}>
+          <polygon points={areaPath} fill={color} fillOpacity="0.12" />
+          <polyline points={points} fill="none" stroke={color} strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
+          {data.map((d, i) => (
+            <circle key={i} cx={i * w} cy={yPct(d.v)} r="2.2" fill={color} stroke="#fff" strokeWidth="1.2" vectorEffect="non-scaling-stroke" />
+          ))}
+        </svg>
+        {data.map((d, i) => {
+          const leftPct = (i / Math.max(data.length - 1, 1)) * 100;
+          const topPx = valueTopPad + (yPct(d.v) / 100) * height - 18;
+          return (
+            <span key={i} style={{
+              position: "absolute",
+              left: `${leftPct}%`,
+              top: topPx,
+              transform: "translateX(-50%)",
+              fontSize: 9.5,
+              fontWeight: 700,
+              color: T.navy,
+              fontFamily: "'JetBrains Mono', monospace",
+              whiteSpace: "nowrap",
+              pointerEvents: "none",
+            }}>{formatValue(d.v)}</span>
+          );
+        })}
+      </div>
+      <div style={{ display: "flex", marginTop: 6 }}>
         {data.map((d, i) => (
-          <circle key={i} cx={i * w} cy={100 - ((d.v - min) / range) * 88 - 6} r="1.2" fill={color} vectorEffect="non-scaling-stroke" />
+          <span key={i} style={{ fontSize: 9.5, color: T.textTertiary, flex: 1, textAlign: "center", fontWeight: 600 }}>{d.m}</span>
         ))}
-      </svg>
-      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, color: T.textTertiary, marginTop: 4 }}>
-        <span>{data[0]?.m}</span>
-        <span>{data[data.length - 1]?.m}</span>
       </div>
     </div>
   );
@@ -4107,41 +4322,36 @@ function AreaTrend({ data, color = T.blue, height = 90 }) {
 // DASHBOARD FINANCIERO — SECTION
 // ═══════════════════════════════════════════════
 function DashboardFinancieroSection() {
-  const ytdMeses = 4; // Ene-Abr 2026
-  const ytd = DASH_FIN_TREND.slice(-ytdMeses).reduce((s, m) => ({
-    ingresos: s.ingresos + m.ingresos, costoFond: s.costoFond + m.costoFond, opex: s.opex + m.opex, prov: s.prov + m.prov,
-  }), { ingresos: 0, costoFond: 0, opex: 0, prov: 0 });
-  const margenFinPct = ((ytd.ingresos - ytd.costoFond) / ytd.ingresos) * 100;
-  const ebitdaYtd = ytd.ingresos - ytd.costoFond - ytd.opex - ytd.prov;
-  const ebitdaPct = (ebitdaYtd / ytd.ingresos) * 100;
-  const utilNeta = Math.round(ebitdaYtd * 0.65); // approx neto
-
   const carteraActual = DASH_FIN_CARTERA_TREND[DASH_FIN_CARTERA_TREND.length - 1].v;
   const carteraInicio = DASH_FIN_CARTERA_TREND[0].v;
   const crecYoY = ((carteraActual - carteraInicio) / carteraInicio) * 100;
 
-  const npl = 2.8;
-  const cobertura = 142;
-  const roa = 4.2;
-  const roe = 14.6;
-  const eficiencia = (ytd.opex / (ytd.ingresos - ytd.costoFond)) * 100;
+  // Concentración por industria
+  const totalCartera = QUANTO_OPS.reduce((s, o) => s + o.montoFinanciado, 0);
+  const industrias = {};
+  QUANTO_OPS.forEach(o => {
+    const cl = CLIENTS.find(c => o.nombre.toUpperCase().includes(c.razonSocial.split(" SA")[0]));
+    const act = cl ? cl.actividad : "Otros";
+    industrias[act] = (industrias[act] || 0) + o.montoFinanciado;
+  });
+  const industriasSorted = Object.entries(industrias).sort((a, b) => b[1] - a[1]);
+  const maxIndustria = industriasSorted[0][1];
 
-  const palette = [T.blue, T.green, T.amber, T.purple, T.red, "#06B6D4", "#EC4899", T.navy];
+  // Concentración por tipo de activo
+  const activos = {};
+  QUANTO_OPS.forEach(o => { activos[o.bien] = (activos[o.bien] || 0) + o.montoFinanciado; });
+  const activosSorted = Object.entries(activos).sort((a, b) => b[1] - a[1]);
+  const maxActivo = activosSorted[0][1];
+
+  const indColors = ["#1F3A5F", "#3D6792", "#4A6B5C", "#8B7355", "#688CB3", "#6B5876", "#7A9684", "#5C5C5C", "#B8A07F", "#A4B8CF", "#9A8AAB"];
+  const actColors = ["#3D6792", "#8B7355", "#4A6B5C", "#1F3A5F", "#6B5876", "#688CB3", "#5C5C5C", "#7A9684", "#B8A07F", "#A4B8CF", "#9A8AAB"];
+
+  const palette = [T.blue, T.green, T.amber, T.purple, T.red, "#688CB3", "#9A8AAB", T.navy];
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 18, animation: "fadeUp .5s ease" }}>
-      {/* Hero KPIs */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
-        <OpKpi icon="account_balance_wallet" label="Cartera total" value={`$${(carteraActual / 1000).toFixed(2)}B`} sub={`${crecYoY >= 0 ? "+" : ""}${crecYoY.toFixed(1)}% YoY`} accent={T.navy} />
-        <OpKpi icon="payments" label="Ingresos YTD" value={fmtShort(ytd.ingresos * 1000)} sub={`${ytdMeses} meses`} accent={T.blue} />
-        <OpKpi icon="trending_up" label="Margen financiero" value={`${margenFinPct.toFixed(1)}%`} sub={`${fmtShort((ytd.ingresos - ytd.costoFond) * 1000)} YTD`} accent={T.green} />
-        <OpKpi icon="paid" label="EBITDA / Margen" value={`${ebitdaPct.toFixed(1)}%`} sub={fmtShort(ebitdaYtd * 1000)} accent={T.purple} />
-        <OpKpi icon="speed" label="ROE / ROA" value={`${roe}% · ${roa}%`} sub="Anualizado" accent={T.amber} />
-        <OpKpi icon="verified" label="NPL ratio" value={`${npl}%`} sub={`Cobertura ${cobertura}%`} accent={npl < 3 ? T.green : T.amber} />
-      </div>
-
       {/* P&L cascade + Composición ingresos */}
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.6fr) minmax(0, 1fr)", gap: 14 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.6fr) minmax(0, 1fr)", gap: 14, alignItems: "start" }}>
         <div style={opCard}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
             <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: 0 }}>P&L · Cascada del mes</h3>
@@ -4150,95 +4360,221 @@ function DashboardFinancieroSection() {
           <PnlCascade items={DASH_FIN_PNL} />
         </div>
         <div style={opCard}>
-          <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: "0 0 14px" }}>Composición de ingresos</h3>
-          <PieChart entries={DASH_FIN_INGRESOS} palette={palette} />
-        </div>
-      </div>
-
-      {/* Trend mensual */}
-      <div style={opCard}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-          <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: 0 }}>Ingresos vs gastos · 12 meses</h3>
-          <span style={{ fontSize: 10, color: T.textTertiary, fontWeight: 700, letterSpacing: 0.8, textTransform: "uppercase" }}>MXN</span>
-        </div>
-        <GroupedBars data={DASH_FIN_TREND} height={150} series={[
-          { key: "ingresos", color: T.green, label: "Ingresos" },
-          { key: "costoFond", color: T.red, label: "Costo fondeo" },
-          { key: "opex", color: T.amber, label: "Gastos opex" },
-          { key: "prov", color: T.purple, label: "Provisiones" },
-        ]} />
-      </div>
-
-      {/* Cartera trend + Sectores */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 14 }}>
-        <div style={opCard}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
-            <div>
-              <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: 0 }}>Evolución de cartera</h3>
-              <p style={{ fontSize: 11, color: T.textTertiary, margin: "2px 0 0" }}>Saldo de cartera bruto · MXN millones</p>
-            </div>
-            <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: 22, fontWeight: 900, color: T.navy, fontFamily: "'JetBrains Mono', monospace" }}>${(carteraActual / 1000).toFixed(2)}B</div>
-              <div style={{ fontSize: 11, color: crecYoY >= 0 ? T.green : T.red, fontWeight: 700 }}>{crecYoY >= 0 ? "↑" : "↓"} {Math.abs(crecYoY).toFixed(1)}% vs hace 12m</div>
-            </div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+            <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: 0 }}>Composición de ingresos</h3>
+            <span style={{ fontSize: 10, color: T.textTertiary, fontWeight: 700, letterSpacing: 0.8, textTransform: "uppercase" }}>% del total</span>
           </div>
-          <AreaTrend data={DASH_FIN_CARTERA_TREND} color={T.blue} height={110} />
+          <HBarComposition entries={DASH_FIN_INGRESOS} />
         </div>
-        <div style={opCard}>
-          <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: "0 0 14px" }}>Cartera por sector económico</h3>
-          <HBars entries={DASH_FIN_SECTORES} palette={palette} formatter={n => fmtShort(n * 1000000)} />
+      </div>
+
+      {/* Balance general */}
+      <div style={opCard}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
+          <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: 0 }}>Balance general</h3>
+          <span style={{ fontSize: 10, color: T.textTertiary, fontWeight: 700, letterSpacing: 0.8, textTransform: "uppercase" }}>30 Abril 2026 · MXN millones</span>
         </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 28, alignItems: "stretch" }}>
+          <BalanceColumn
+            title="Activos"
+            totalLabel="Total activos"
+            total={2550}
+            rows={[
+              { type: "section", label: "Activos circulantes" },
+              { label: "Efectivo y equivalentes", value: 145 },
+              { label: "Inversiones en valores", value: 285 },
+              { label: "Cuentas por cobrar comerciales", value: 78 },
+              { label: "Otros activos circulantes", value: 32 },
+              { type: "subtotal", label: "Total circulante", value: 540 },
+              { type: "section", label: "Activos no circulantes" },
+              { label: "Cartera de arrendamiento bruta", value: 1955 },
+              { label: "Estimación de incobrables", value: -55 },
+              { label: "Mobiliario y equipo (neto)", value: 42 },
+              { label: "Activos intangibles", value: 18 },
+              { label: "Impuestos diferidos", value: 45 },
+              { label: "Otros activos", value: 5 },
+              { type: "subtotal", label: "Total no circulante", value: 2010 },
+            ]}
+          />
+          <BalanceColumn
+            title="Pasivos y capital"
+            totalLabel="Total pasivo + capital"
+            total={2550}
+            rows={[
+              { type: "section", label: "Pasivos circulantes" },
+              { label: "Obligaciones financieras CP", value: 245 },
+              { label: "Cuentas por pagar", value: 95 },
+              { label: "Impuestos por pagar", value: 28 },
+              { label: "Acumulados y otros", value: 12 },
+              { type: "subtotal", label: "Total circulante", value: 380 },
+              { type: "section", label: "Pasivos no circulantes" },
+              { label: "Deuda bancaria LP", value: 1420 },
+              { label: "Bursatilizaciones", value: 320 },
+              { label: "Provisiones LP", value: 35 },
+              { type: "subtotal", label: "Total no circulante", value: 1775 },
+              { type: "subtotal", label: "Total pasivos", value: 2155 },
+              { type: "section", label: "Capital contable" },
+              { label: "Capital social", value: 220 },
+              { label: "Reservas", value: 35 },
+              { label: "Utilidades retenidas", value: 108 },
+              { label: "Resultado del ejercicio", value: 32 },
+              { type: "subtotal", label: "Total capital", value: 395 },
+            ]}
+          />
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 14, paddingTop: 12, borderTop: `1px solid ${T.borderLight}`, fontSize: 10, color: T.textTertiary }}>
+          <span style={{ fontWeight: 600 }}>Apalancamiento: <span style={{ color: T.navy, fontFamily: "'JetBrains Mono', monospace", fontWeight: 800 }}>5.46×</span></span>
+          <span style={{ fontWeight: 600 }}>Liquidez: <span style={{ color: T.navy, fontFamily: "'JetBrains Mono', monospace", fontWeight: 800 }}>1.42×</span></span>
+          <span style={{ fontWeight: 600 }}>Capital / activos: <span style={{ color: T.navy, fontFamily: "'JetBrains Mono', monospace", fontWeight: 800 }}>15.5%</span></span>
+          <span style={{ fontStyle: "italic" }}>Cifras simuladas con fines ilustrativos</span>
+        </div>
+      </div>
+
+      {/* Evolución de cartera */}
+      <div style={opCard}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+          <div>
+            <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: 0 }}>Evolución de cartera</h3>
+            <p style={{ fontSize: 11, color: T.textTertiary, margin: "2px 0 0" }}>Saldo de cartera bruto · MXN millones</p>
+          </div>
+          <div style={{ textAlign: "right" }}>
+            <div style={{ fontSize: 22, fontWeight: 900, color: T.navy, fontFamily: "'JetBrains Mono', monospace" }}>${(carteraActual / 1000).toFixed(2)}B</div>
+            <div style={{ fontSize: 11, color: crecYoY >= 0 ? T.green : T.red, fontWeight: 700 }}>{crecYoY >= 0 ? "↑" : "↓"} {Math.abs(crecYoY).toFixed(1)}% vs hace 12m</div>
+          </div>
+        </div>
+        <AreaTrend data={DASH_FIN_CARTERA_TREND} color={T.blue} />
       </div>
 
       {/* Plan vs Real */}
       <div style={opCard}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
           <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: 0 }}>Plan vs Real · YTD 2026</h3>
-          <span style={{ fontSize: 10, color: T.textTertiary, fontWeight: 700, letterSpacing: 0.8, textTransform: "uppercase" }}>4 meses · MXN</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ width: 10, height: 10, borderRadius: 2, background: T.surfaceAlt, border: `1px solid ${T.border}` }} />
+              <span style={{ fontSize: 10.5, color: T.textSecondary, fontWeight: 600 }}>Plan</span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ width: 10, height: 10, borderRadius: 2, background: T.navy }} />
+              <span style={{ fontSize: 10.5, color: T.textSecondary, fontWeight: 600 }}>Real</span>
+            </div>
+            <span style={{ fontSize: 10, color: T.textTertiary, fontWeight: 700, letterSpacing: 0.8, textTransform: "uppercase" }}>4 meses · MXN</span>
+          </div>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={{ display: "grid", gridTemplateColumns: `repeat(${DASH_FIN_BUDGET.length}, 1fr)`, gap: 16 }}>
           {DASH_FIN_BUDGET.map(row => {
             const variancePct = ((row.actual - row.budget) / row.budget) * 100;
             const positive = variancePct >= 0;
+            const maxV = Math.max(row.actual, row.budget);
+            const minV = Math.min(row.actual, row.budget);
+            const floor = minV * 0.88;
+            const range = maxV - floor;
+            const planH = ((row.budget - floor) / range) * 100;
+            const realH = ((row.actual - floor) / range) * 100;
             return (
-              <div key={row.kpi} style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.4fr) 100px 100px minmax(0, 1.6fr) 80px", gap: 14, alignItems: "center", padding: "8px 0", borderBottom: `1px solid ${T.borderLight}` }}>
-                <span style={{ fontSize: 12, fontWeight: 600, color: T.text }}>{row.kpi}</span>
-                <span style={{ fontSize: 11, color: T.textTertiary, fontFamily: "'JetBrains Mono', monospace" }}>Plan {fmtShort(row.budget * 1000)}</span>
-                <span style={{ fontSize: 12, color: T.navy, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace" }}>Real {fmtShort(row.actual * 1000)}</span>
-                <div style={{ position: "relative", height: 8, background: T.surfaceAlt, borderRadius: 4, overflow: "hidden" }}>
-                  <div style={{ position: "absolute", left: 0, top: 0, height: "100%", width: `${Math.min((row.actual / Math.max(row.budget, row.actual)) * 100, 100)}%`, background: positive ? T.green : T.red, borderRadius: 4 }} />
-                  <div style={{ position: "absolute", left: `${(row.budget / Math.max(row.budget, row.actual)) * 100}%`, top: -2, height: 12, width: 2, background: T.navy }} />
+              <div key={row.kpi} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 10.5, fontWeight: 800, color: positive ? T.green : T.red, fontFamily: "'JetBrains Mono', monospace", padding: "3px 10px", borderRadius: 4, background: positive ? T.greenLight : T.redLight }}>
+                  {positive ? "+" : ""}{variancePct.toFixed(1)}%
+                </span>
+                <div style={{ display: "flex", alignItems: "flex-end", gap: 10, height: 170, width: "100%", justifyContent: "center", borderBottom: `1px solid ${T.border}`, paddingBottom: 0 }}>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5, height: "100%", justifyContent: "flex-end", flex: 1, maxWidth: 42 }}>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: T.textSecondary, fontFamily: "'JetBrains Mono', monospace", whiteSpace: "nowrap" }}>{fmtShort(row.budget * 1000)}</span>
+                    <div style={{ width: "100%", height: `${planH}%`, background: T.surfaceAlt, border: `1px solid ${T.border}`, borderBottom: "none", borderRadius: "3px 3px 0 0", transition: "height .8s ease" }} />
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5, height: "100%", justifyContent: "flex-end", flex: 1, maxWidth: 42 }}>
+                    <span style={{ fontSize: 10.5, fontWeight: 800, color: T.navy, fontFamily: "'JetBrains Mono', monospace", whiteSpace: "nowrap" }}>{fmtShort(row.actual * 1000)}</span>
+                    <div style={{ width: "100%", height: `${realH}%`, background: T.navy, borderRadius: "3px 3px 0 0", transition: "height .8s ease" }} />
+                  </div>
                 </div>
-                <span style={{ fontSize: 12, fontWeight: 800, color: positive ? T.green : T.red, fontFamily: "'JetBrains Mono', monospace", padding: "3px 8px", borderRadius: 4, background: positive ? T.greenLight : T.redLight, textAlign: "center" }}>{positive ? "+" : ""}{variancePct.toFixed(1)}%</span>
+                <span style={{ fontSize: 11, fontWeight: 600, color: T.text, textAlign: "center", marginTop: 2 }}>{row.kpi}</span>
               </div>
             );
           })}
         </div>
+        <p style={{ fontSize: 10, color: T.textTertiary, margin: "14px 0 0", textAlign: "right", fontStyle: "italic" }}>Escala truncada para resaltar variaciones · Importes en etiquetas reflejan valores reales</p>
       </div>
 
-      {/* Ratios bar */}
-      <div style={opCard}>
-        <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: "0 0 16px" }}>Ratios financieros clave</h3>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 18 }}>
-          {[
-            { label: "Eficiencia operativa", value: `${eficiencia.toFixed(1)}%`, target: "<40%", ok: eficiencia < 40, hint: "Gasto opex / margen financiero" },
-            { label: "Apalancamiento", value: "5.4×", target: "<7×", ok: true, hint: "Pasivo / Capital" },
-            { label: "Solvencia (capital)", value: "16.8%", target: ">12%", ok: true, hint: "Capital regulatorio" },
-            { label: "Liquidez", value: "1.42×", target: ">1×", ok: true, hint: "Activos circ / Pasivos circ" },
-            { label: "Días cobranza (DSO)", value: "12 d", target: "<15 d", ok: true, hint: "Rotación cuentas por cobrar" },
-            { label: "Cost-to-income", value: "33.4%", target: "<40%", ok: true, hint: "Costo total / Ingresos" },
-          ].map(r => (
-            <div key={r.label}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
-                <span style={{ fontSize: 11, color: T.textSecondary, fontWeight: 600 }}>{r.label}</span>
-                <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 3, background: r.ok ? T.greenLight : T.amberLight, color: r.ok ? T.green : T.amber, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace" }}>{r.target}</span>
+      {/* Concentración: Industria + Tipo de Activo */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+        <div style={{ ...card, padding: 0, overflow: "hidden" }}>
+          <div style={{ padding: "18px 24px", borderBottom: `1px solid ${T.borderLight}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: `linear-gradient(135deg, ${T.blueLight}, ${T.purpleLight})`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <span className="material-symbols-outlined" style={{ fontSize: 20, color: T.blue }}>factory</span>
               </div>
-              <div style={{ fontSize: 22, fontWeight: 900, color: r.ok ? T.navy : T.amber, fontFamily: "'JetBrains Mono', monospace", lineHeight: 1.1 }}>{r.value}</div>
-              <div style={{ fontSize: 10, color: T.textTertiary, marginTop: 2 }}>{r.hint}</div>
+              <div>
+                <h3 style={{ fontSize: 14, fontWeight: 800, color: T.navy, margin: 0 }}>Concentración por Industria</h3>
+                <p style={{ fontSize: 10, color: T.textTertiary, margin: "1px 0 0" }}>Distribución del financiamiento por sector</p>
+              </div>
             </div>
-          ))}
+            <div style={{ padding: "4px 12px", borderRadius: 20, background: T.blueLight, fontSize: 11, fontWeight: 700, color: T.blue }}>{industriasSorted.length} sectores</div>
+          </div>
+          <div style={{ padding: "16px 24px 20px" }}>
+            {industriasSorted.map(([name, val], i) => {
+              const pct = (val / totalCartera * 100);
+              const barWidth = (val / maxIndustria * 100);
+              const color = indColors[i % indColors.length];
+              return (
+                <div key={name} style={{ marginBottom: i < industriasSorted.length - 1 ? 12 : 0 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 5 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <div style={{ width: 3, height: 16, borderRadius: 2, background: color }} />
+                      <span style={{ fontSize: 12, fontWeight: 600, color: T.text }}>{name}</span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                      <span style={{ fontSize: 10, color: T.textTertiary }}>{fmtShort(val)}</span>
+                      <span style={{ fontSize: 13, fontWeight: 800, color: T.navy, fontFamily: "'JetBrains Mono', monospace", minWidth: 48, textAlign: "right" }}>{pct.toFixed(1)}%</span>
+                    </div>
+                  </div>
+                  <div style={{ height: 8, borderRadius: 4, background: T.surfaceAlt, overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${barWidth}%`, borderRadius: 4, background: color, transition: "width .8s ease" }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div style={{ ...card, padding: 0, overflow: "hidden" }}>
+          <div style={{ padding: "18px 24px", borderBottom: `1px solid ${T.borderLight}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: `linear-gradient(135deg, ${T.purpleLight}, ${T.amberLight})`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <span className="material-symbols-outlined" style={{ fontSize: 20, color: T.purple }}>precision_manufacturing</span>
+              </div>
+              <div>
+                <h3 style={{ fontSize: 14, fontWeight: 800, color: T.navy, margin: 0 }}>Concentración por Tipo de Activo</h3>
+                <p style={{ fontSize: 10, color: T.textTertiary, margin: "1px 0 0" }}>Distribución por tipo de bien financiado</p>
+              </div>
+            </div>
+            <div style={{ padding: "4px 12px", borderRadius: 20, background: T.purpleLight, fontSize: 11, fontWeight: 700, color: T.purple }}>{activosSorted.length} tipos</div>
+          </div>
+          <div style={{ padding: "16px 24px 20px" }}>
+            {activosSorted.map(([name, val], i) => {
+              const pct = (val / totalCartera * 100);
+              const barWidth = (val / maxActivo * 100);
+              const color = actColors[i % actColors.length];
+              return (
+                <div key={name} style={{ marginBottom: i < activosSorted.length - 1 ? 12 : 0 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 5 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <div style={{ width: 3, height: 16, borderRadius: 2, background: color }} />
+                      <span style={{ fontSize: 11, fontWeight: 600, color: T.text }}>{name}</span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                      <span style={{ fontSize: 10, color: T.textTertiary }}>{fmtShort(val)}</span>
+                      <span style={{ fontSize: 13, fontWeight: 800, color: T.navy, fontFamily: "'JetBrains Mono', monospace", minWidth: 48, textAlign: "right" }}>{pct.toFixed(1)}%</span>
+                    </div>
+                  </div>
+                  <div style={{ height: 8, borderRadius: 4, background: T.surfaceAlt, overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${barWidth}%`, borderRadius: 4, background: color, transition: "width .8s ease" }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
+
     </div>
   );
 }
@@ -4259,9 +4595,9 @@ const WC_BANCOS = [
 const WC_AR_AGING = [
   { bucket: "Al corriente", monto: 124500, color: T.green },
   { bucket: "1–30 días", monto: 12400, color: T.amber },
-  { bucket: "31–60 días", monto: 4200, color: "#EA580C" },
+  { bucket: "31–60 días", monto: 4200, color: "#7A4848" },
   { bucket: "61–90 días", monto: 1800, color: T.red },
-  { bucket: ">90 días", monto: 950, color: "#7C1D1D" },
+  { bucket: ">90 días", monto: 950, color: "#5C2929" },
 ];
 
 const WC_AP_AGING = [
@@ -4269,6 +4605,59 @@ const WC_AP_AGING = [
   { bucket: "Por vencer 8–30d", monto: 18200, color: T.blue },
   { bucket: "Por vencer 31–60d", monto: 9100, color: T.green },
   { bucket: "Vencidas", monto: 1250, color: T.red },
+];
+
+// Detalle por cliente (Cuentas por cobrar) — montos en miles MXN
+const WC_AR_CLIENTES = [
+  { cliente: "ABC Aluminum", rfc: "ABC991012BF0", actividad: "Manufactura", ejecutivo: "Ramiro Magaña", al_corriente: 26800, d1_30: 2300, d31_60: 0, d61_90: 0, d90: 0 },
+  { cliente: "Plásticos del Sureste", rfc: "PRS220317LL3", actividad: "Manufactura", ejecutivo: "Laura Soto", al_corriente: 18400, d1_30: 0, d31_60: 0, d61_90: 0, d90: 0 },
+  { cliente: "Hospital San Vicente", rfc: "HSV050422FF1", actividad: "Salud", ejecutivo: "Carlos Mendoza", al_corriente: 13800, d1_30: 1500, d31_60: 0, d61_90: 0, d90: 0 },
+  { cliente: "Solar Energy Sonora", rfc: "SES210603AA3", actividad: "Energía", ejecutivo: "Jorge Fuentes", al_corriente: 14100, d1_30: 0, d31_60: 0, d61_90: 0, d90: 0 },
+  { cliente: "Minera Cobre Pacífico", rfc: "MCP120815MM5", actividad: "Construcción", ejecutivo: "Jorge Fuentes", al_corriente: 12200, d1_30: 0, d31_60: 0, d61_90: 0, d90: 0 },
+  { cliente: "Grupo Constructor Pacífico", rfc: "GCP180523LA9", actividad: "Construcción", ejecutivo: "Carlos Mendoza", al_corriente: 10400, d1_30: 1100, d31_60: 0, d61_90: 0, d90: 0 },
+  { cliente: "Tech Solutions GDL", rfc: "TSG170418PQ4", actividad: "Tecnología", ejecutivo: "Jorge Fuentes", al_corriente: 7800, d1_30: 1300, d31_60: 600, d61_90: 0, d90: 0 },
+  { cliente: "AgroBajío Industrial", rfc: "ABI160910KP1", actividad: "Agropecuario", ejecutivo: "Laura Soto", al_corriente: 7200, d1_30: 800, d31_60: 700, d61_90: 0, d90: 0 },
+  { cliente: "Distribuidora Pacífico", rfc: "DIP080718JK6", actividad: "Comercio", ejecutivo: "Laura Soto", al_corriente: 5400, d1_30: 1600, d31_60: 400, d61_90: 0, d90: 0 },
+  { cliente: "Manufactura Textil Querétaro", rfc: "MTQ190501XX2", actividad: "Manufactura", ejecutivo: "Ana Ríos", al_corriente: 3200, d1_30: 1500, d31_60: 1100, d61_90: 600, d90: 0 },
+  { cliente: "Logística Express MX", rfc: "LEM140312BB9", actividad: "Transporte", ejecutivo: "Carlos Mendoza", al_corriente: 2400, d1_30: 1100, d31_60: 700, d61_90: 600, d90: 350 },
+  { cliente: "Servicios Logísticos Central", rfc: "SLC210918DD8", actividad: "Transporte", ejecutivo: "Carlos Mendoza", al_corriente: 1800, d1_30: 900, d31_60: 700, d61_90: 600, d90: 600 },
+  { cliente: "Distribuidora Farmacéutica RB", rfc: "DFR181122RR4", actividad: "Salud", ejecutivo: "Jorge Fuentes", al_corriente: 1000, d1_30: 300, d31_60: 0, d61_90: 0, d90: 0 },
+];
+
+// Detalle por proveedor (Cuentas por pagar) — 32 proveedores · montos en miles MXN
+const WC_AP_PROVEEDORES = [
+  { proveedor: "SIEMENS MÉXICO", rfc: "SIE920731AB1", categoria: "Maquinaria industrial", saldo: 4200, vencer_7d: 1200, vencer_8_30d: 2400, vencer_31_60d: 600, vencidas: 0 },
+  { proveedor: "CATERPILLAR MÉXICO", rfc: "CAT850412AC1", categoria: "Maquinaria pesada", saldo: 3800, vencer_7d: 800, vencer_8_30d: 2200, vencer_31_60d: 800, vencidas: 0 },
+  { proveedor: "ABB MÉXICO", rfc: "ABB890215XY3", categoria: "Maquinaria industrial", saldo: 2400, vencer_7d: 0, vencer_8_30d: 1800, vencer_31_60d: 600, vencidas: 0 },
+  { proveedor: "JOHN DEERE", rfc: "JDR910514FE2", categoria: "Maquinaria pesada", saldo: 2100, vencer_7d: 600, vencer_8_30d: 900, vencer_31_60d: 600, vencidas: 0 },
+  { proveedor: "SCHNEIDER ELECTRIC", rfc: "APC910707AA5", categoria: "Tecnología / IT", saldo: 1950, vencer_7d: 0, vencer_8_30d: 1400, vencer_31_60d: 550, vencidas: 0 },
+  { proveedor: "VOLVO TRUCKS", rfc: "VTM880619TR7", categoria: "Transporte", saldo: 1820, vencer_7d: 320, vencer_8_30d: 1100, vencer_31_60d: 400, vencidas: 0 },
+  { proveedor: "KOMATSU LATINOAMÉRICA", rfc: "KOM920518DH9", categoria: "Maquinaria pesada", saldo: 1740, vencer_7d: 0, vencer_8_30d: 1240, vencer_31_60d: 500, vencidas: 0 },
+  { proveedor: "SANDVIK MÉXICO", rfc: "SVM900812SD3", categoria: "Minería", saldo: 1620, vencer_7d: 0, vencer_8_30d: 1100, vencer_31_60d: 520, vencidas: 0 },
+  { proveedor: "HPE TECNOLOGÍAS", rfc: "HPE950620TC8", categoria: "Tecnología / IT", saldo: 1480, vencer_7d: 480, vencer_8_30d: 700, vencer_31_60d: 300, vencidas: 0 },
+  { proveedor: "ROCKWELL AUTOMATION", rfc: "RAM870612MN4", categoria: "Maquinaria industrial", saldo: 1320, vencer_7d: 0, vencer_8_30d: 1000, vencer_31_60d: 320, vencidas: 0 },
+  { proveedor: "KENWORTH MEXICANA", rfc: "KME900425KW1", categoria: "Transporte", saldo: 1240, vencer_7d: 0, vencer_8_30d: 940, vencer_31_60d: 300, vencidas: 0 },
+  { proveedor: "FREIGHTLINER MX", rfc: "FRM910303FR5", categoria: "Transporte", saldo: 1150, vencer_7d: 250, vencer_8_30d: 600, vencer_31_60d: 300, vencidas: 0 },
+  { proveedor: "THERMO KING", rfc: "TKM920810TK2", categoria: "Refrigeración", saldo: 1100, vencer_7d: 0, vencer_8_30d: 800, vencer_31_60d: 300, vencidas: 0 },
+  { proveedor: "INYECTORAS ENGEL", rfc: "ENG940510EN3", categoria: "Plásticos", saldo: 980, vencer_7d: 0, vencer_8_30d: 700, vencer_31_60d: 280, vencidas: 0 },
+  { proveedor: "SIEMENS HEALTHCARE", rfc: "SHC200315SH7", categoria: "Equipo médico", saldo: 920, vencer_7d: 0, vencer_8_30d: 620, vencer_31_60d: 300, vencidas: 0 },
+  { proveedor: "PICANOL TEXTIL", rfc: "PTX980612PN9", categoria: "Manufactura textil", saldo: 880, vencer_7d: 0, vencer_8_30d: 580, vencer_31_60d: 300, vencidas: 0 },
+  { proveedor: "HINO MOTORS MX", rfc: "HMM940825HN6", categoria: "Transporte", saldo: 820, vencer_7d: 0, vencer_8_30d: 520, vencer_31_60d: 300, vencidas: 0 },
+  { proveedor: "TOYOTA MATERIAL HANDLING", rfc: "TMH900218TY8", categoria: "Logística", saldo: 760, vencer_7d: 260, vencer_8_30d: 400, vencer_31_60d: 100, vencidas: 0 },
+  { proveedor: "CARRIER COMMERCIAL", rfc: "CCM910424CR4", categoria: "Refrigeración", saldo: 720, vencer_7d: 0, vencer_8_30d: 500, vencer_31_60d: 220, vencidas: 0 },
+  { proveedor: "CUMMINS MEXICANA", rfc: "CMM880515CM2", categoria: "Motores", saldo: 680, vencer_7d: 0, vencer_8_30d: 480, vencer_31_60d: 200, vencidas: 0 },
+  { proveedor: "GE HEALTHCARE", rfc: "GEH900618GE5", categoria: "Equipo médico", saldo: 640, vencer_7d: 0, vencer_8_30d: 420, vencer_31_60d: 220, vencidas: 0 },
+  { proveedor: "CASE NEW HOLLAND", rfc: "CNH950707CN1", categoria: "Maquinaria pesada", saldo: 600, vencer_7d: 0, vencer_8_30d: 380, vencer_31_60d: 220, vencidas: 0 },
+  { proveedor: "MERCEDES-BENZ TRUCKS", rfc: "MBT890912MB7", categoria: "Transporte", saldo: 560, vencer_7d: 160, vencer_8_30d: 280, vencer_31_60d: 120, vencidas: 0 },
+  { proveedor: "DELL TECHNOLOGIES MX", rfc: "DTM010320DL3", categoria: "Tecnología / IT", saldo: 520, vencer_7d: 0, vencer_8_30d: 320, vencer_31_60d: 200, vencidas: 0 },
+  { proveedor: "BOBCAT MÉXICO", rfc: "BBC990515BC4", categoria: "Maquinaria pesada", saldo: 480, vencer_7d: 0, vencer_8_30d: 320, vencer_31_60d: 160, vencidas: 0 },
+  { proveedor: "DAIKIN INDUSTRIAS", rfc: "DKI950818DK2", categoria: "Refrigeración", saldo: 440, vencer_7d: 0, vencer_8_30d: 280, vencer_31_60d: 160, vencidas: 0 },
+  { proveedor: "ALFA LAVAL DE MÉXICO", rfc: "ALV880721AL6", categoria: "Procesos industriales", saldo: 420, vencer_7d: 0, vencer_8_30d: 280, vencer_31_60d: 140, vencidas: 0 },
+  { proveedor: "EATON ELÉCTRICO", rfc: "ETN910410ET2", categoria: "Tecnología / IT", saldo: 380, vencer_7d: 0, vencer_8_30d: 250, vencer_31_60d: 130, vencidas: 0 },
+  { proveedor: "FANUC ROBOTS", rfc: "FRC960320FN8", categoria: "Maquinaria industrial", saldo: 360, vencer_7d: 0, vencer_8_30d: 220, vencer_31_60d: 140, vencidas: 0 },
+  { proveedor: "SANY HEAVY MX", rfc: "SHV120615SY9", categoria: "Maquinaria pesada", saldo: 340, vencer_7d: 0, vencer_8_30d: 200, vencer_31_60d: 140, vencidas: 0 },
+  { proveedor: "VESTAS WIND SYSTEMS", rfc: "VWS080425VW3", categoria: "Energía", saldo: 320, vencer_7d: 0, vencer_8_30d: 210, vencer_31_60d: 110, vencidas: 0 },
+  { proveedor: "HAULOTTE INDUSTRIAS", rfc: "HLT100819HL5", categoria: "Maquinaria industrial", saldo: 280, vencer_7d: 80, vencer_8_30d: 0, vencer_31_60d: 0, vencidas: 200 },
 ];
 
 const WC_CREDIT_LINES = [
@@ -4355,7 +4744,132 @@ function CashFlowChart({ data, height = 160 }) {
 // ═══════════════════════════════════════════════
 // WORKING CAPITAL — SECTION
 // ═══════════════════════════════════════════════
+function ArDetailView({ onBack }) {
+  const totals = WC_AR_CLIENTES.reduce((s, c) => ({
+    al_corriente: s.al_corriente + c.al_corriente,
+    d1_30: s.d1_30 + c.d1_30,
+    d31_60: s.d31_60 + c.d31_60,
+    d61_90: s.d61_90 + c.d61_90,
+    d90: s.d90 + c.d90,
+  }), { al_corriente: 0, d1_30: 0, d31_60: 0, d61_90: 0, d90: 0 });
+  const grandTotal = totals.al_corriente + totals.d1_30 + totals.d31_60 + totals.d61_90 + totals.d90;
+  const morosos = WC_AR_CLIENTES.filter(c => (c.d31_60 + c.d61_90 + c.d90) > 0).length;
+  const enMora = totals.d1_30 + totals.d31_60 + totals.d61_90 + totals.d90;
+  const enMoraPct = (enMora / grandTotal) * 100;
+  const columns = [
+    { id: "cliente", label: "Cliente" },
+    { id: "rfc", label: "RFC" },
+    { id: "actividad", label: "Actividad" },
+    { id: "ejecutivo", label: "Ejecutivo" },
+    { id: "saldo", label: "Saldo total", sortValue: r => r.al_corriente + r.d1_30 + r.d31_60 + r.d61_90 + r.d90, defaultDir: "desc" },
+    { id: "al_corriente", label: "Al corriente", defaultDir: "desc" },
+    { id: "d1_30", label: "1–30 días", defaultDir: "desc" },
+    { id: "d31_60", label: "31–60 días", defaultDir: "desc" },
+    { id: "d61_90", label: "61–90 días", defaultDir: "desc" },
+    { id: "d90", label: ">90 días", defaultDir: "desc" },
+  ];
+  const renderCell = (c, r) => {
+    const total = r.al_corriente + r.d1_30 + r.d31_60 + r.d61_90 + r.d90;
+    if (c.id === "cliente") return <span style={{ fontWeight: 700, color: T.text, fontSize: 12 }}>{r.cliente}</span>;
+    if (c.id === "rfc") return <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: T.textTertiary }}>{r.rfc}</span>;
+    if (c.id === "actividad") return <span style={{ fontSize: 10, color: T.textSecondary }}>{r.actividad}</span>;
+    if (c.id === "ejecutivo") return <span style={{ fontSize: 10, color: T.textSecondary }}>{r.ejecutivo}</span>;
+    if (c.id === "saldo") return <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, fontWeight: 800, color: T.navy }}>{fmtShort(total * 1000)}</span>;
+    if (c.id === "al_corriente") return <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: r.al_corriente > 0 ? T.green : T.textTertiary }}>{r.al_corriente > 0 ? fmtShort(r.al_corriente * 1000) : "—"}</span>;
+    if (c.id === "d1_30") return <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: r.d1_30 > 0 ? T.amber : T.textTertiary }}>{r.d1_30 > 0 ? fmtShort(r.d1_30 * 1000) : "—"}</span>;
+    if (c.id === "d31_60") return <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: r.d31_60 > 0 ? "#7A4848" : T.textTertiary, fontWeight: r.d31_60 > 0 ? 700 : 400 }}>{r.d31_60 > 0 ? fmtShort(r.d31_60 * 1000) : "—"}</span>;
+    if (c.id === "d61_90") return <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: r.d61_90 > 0 ? T.red : T.textTertiary, fontWeight: r.d61_90 > 0 ? 700 : 400 }}>{r.d61_90 > 0 ? fmtShort(r.d61_90 * 1000) : "—"}</span>;
+    if (c.id === "d90") return <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: r.d90 > 0 ? "#5C2929" : T.textTertiary, fontWeight: r.d90 > 0 ? 800 : 400 }}>{r.d90 > 0 ? fmtShort(r.d90 * 1000) : "—"}</span>;
+  };
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 18, animation: "fadeUp .5s ease" }}>
+      <button onClick={onBack} style={{ alignSelf: "flex-start", display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", color: T.navy, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", padding: "4px 0" }}>
+        <span className="material-symbols-outlined" style={{ fontSize: 16 }}>arrow_back</span>
+        Capital de trabajo operativo
+      </button>
+      <div>
+        <h2 style={{ fontSize: 22, fontWeight: 800, color: T.navy, margin: 0 }}>Cuentas por cobrar · Detalle por cliente</h2>
+        <p style={{ fontSize: 12, color: T.textSecondary, margin: "4px 0 0" }}>Saldo y antigüedad de cartera por cliente · MXN</p>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
+        <OpKpi icon="receipt_long" label="Saldo total CxC" value={fmtShort(grandTotal * 1000)} sub={`${WC_AR_CLIENTES.length} clientes`} accent={T.navy} />
+        <OpKpi icon="check_circle" label="Al corriente" value={fmtShort(totals.al_corriente * 1000)} sub={`${((totals.al_corriente / grandTotal) * 100).toFixed(1)}% del saldo`} accent={T.green} />
+        <OpKpi icon="warning" label="En mora" value={fmtShort(enMora * 1000)} sub={`${enMoraPct.toFixed(1)}% · ${morosos} clientes`} accent={T.amber} />
+        <OpKpi icon="error" label=">90 días" value={fmtShort(totals.d90 * 1000)} sub={totals.d90 > 0 ? "Riesgo de incobrable" : "Sin saldos críticos"} accent={totals.d90 > 0 ? T.red : T.green} />
+      </div>
+      <ScrollTable
+        columns={columns}
+        rows={WC_AR_CLIENTES}
+        gridCols="minmax(180px,1.6fr) 130px 120px 130px 110px 110px 100px 100px 100px 100px"
+        minWidth={1280}
+        renderCell={renderCell}
+        defaultSortCol="saldo"
+        defaultSortDir="desc"
+      />
+    </div>
+  );
+}
+
+function ApDetailView({ onBack }) {
+  const totals = WC_AP_PROVEEDORES.reduce((s, p) => ({
+    saldo: s.saldo + p.saldo,
+    vencer_7d: s.vencer_7d + p.vencer_7d,
+    vencer_8_30d: s.vencer_8_30d + p.vencer_8_30d,
+    vencer_31_60d: s.vencer_31_60d + p.vencer_31_60d,
+    vencidas: s.vencidas + p.vencidas,
+  }), { saldo: 0, vencer_7d: 0, vencer_8_30d: 0, vencer_31_60d: 0, vencidas: 0 });
+  const provVencidos = WC_AP_PROVEEDORES.filter(p => p.vencidas > 0).length;
+  const columns = [
+    { id: "proveedor", label: "Proveedor" },
+    { id: "rfc", label: "RFC" },
+    { id: "categoria", label: "Categoría" },
+    { id: "saldo", label: "Saldo total", defaultDir: "desc" },
+    { id: "vencer_7d", label: "Por vencer ≤7d", defaultDir: "desc" },
+    { id: "vencer_8_30d", label: "8–30 días", defaultDir: "desc" },
+    { id: "vencer_31_60d", label: "31–60 días", defaultDir: "desc" },
+    { id: "vencidas", label: "Vencidas", defaultDir: "desc" },
+  ];
+  const renderCell = (c, r) => {
+    if (c.id === "proveedor") return <span style={{ fontWeight: 700, color: T.text, fontSize: 11 }}>{r.proveedor}</span>;
+    if (c.id === "rfc") return <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: T.textTertiary }}>{r.rfc}</span>;
+    if (c.id === "categoria") return <span style={{ fontSize: 10, color: T.textSecondary }}>{r.categoria}</span>;
+    if (c.id === "saldo") return <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, fontWeight: 800, color: T.navy }}>{fmtShort(r.saldo * 1000)}</span>;
+    if (c.id === "vencer_7d") return <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: r.vencer_7d > 0 ? T.amber : T.textTertiary, fontWeight: r.vencer_7d > 0 ? 700 : 400 }}>{r.vencer_7d > 0 ? fmtShort(r.vencer_7d * 1000) : "—"}</span>;
+    if (c.id === "vencer_8_30d") return <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: r.vencer_8_30d > 0 ? T.blue : T.textTertiary }}>{r.vencer_8_30d > 0 ? fmtShort(r.vencer_8_30d * 1000) : "—"}</span>;
+    if (c.id === "vencer_31_60d") return <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: r.vencer_31_60d > 0 ? T.green : T.textTertiary }}>{r.vencer_31_60d > 0 ? fmtShort(r.vencer_31_60d * 1000) : "—"}</span>;
+    if (c.id === "vencidas") return <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: r.vencidas > 0 ? T.red : T.textTertiary, fontWeight: r.vencidas > 0 ? 800 : 400 }}>{r.vencidas > 0 ? fmtShort(r.vencidas * 1000) : "—"}</span>;
+  };
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 18, animation: "fadeUp .5s ease" }}>
+      <button onClick={onBack} style={{ alignSelf: "flex-start", display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", color: T.navy, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", padding: "4px 0" }}>
+        <span className="material-symbols-outlined" style={{ fontSize: 16 }}>arrow_back</span>
+        Capital de trabajo operativo
+      </button>
+      <div>
+        <h2 style={{ fontSize: 22, fontWeight: 800, color: T.navy, margin: 0 }}>Cuentas por pagar · Detalle por proveedor</h2>
+        <p style={{ fontSize: 12, color: T.textSecondary, margin: "4px 0 0" }}>Saldo y antigüedad por proveedor · MXN</p>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
+        <OpKpi icon="payments" label="Saldo total CxP" value={fmtShort(totals.saldo * 1000)} sub={`${WC_AP_PROVEEDORES.length} proveedores`} accent={T.navy} />
+        <OpKpi icon="schedule" label="Por vencer ≤7d" value={fmtShort(totals.vencer_7d * 1000)} sub="Pago crítico próximo" accent={T.amber} />
+        <OpKpi icon="event" label="8–30 días" value={fmtShort(totals.vencer_8_30d * 1000)} sub="Pago programado" accent={T.blue} />
+        <OpKpi icon="warning" label="Vencidas" value={fmtShort(totals.vencidas * 1000)} sub={provVencidos > 0 ? `${provVencidos} proveedor(es)` : "Sin vencidas"} accent={totals.vencidas > 0 ? T.red : T.green} />
+      </div>
+      <ScrollTable
+        columns={columns}
+        rows={WC_AP_PROVEEDORES}
+        gridCols="minmax(180px,1.6fr) 120px minmax(140px,1fr) 110px 110px 110px 110px 100px"
+        minWidth={1180}
+        renderCell={renderCell}
+        defaultSortCol="saldo"
+        defaultSortDir="desc"
+      />
+    </div>
+  );
+}
+
 function WorkingCapitalSection() {
+  const [detail, setDetail] = useState(null); // null | "ar" | "ap"
   const cashTotal = WC_BANCOS.reduce((s, b) => s + b.saldo, 0);
   const cashLiq = WC_BANCOS.filter(b => b.cuenta.includes("operativa") || b.cuenta.includes("vista") || b.cuenta.includes("fondos")).reduce((s, b) => s + b.saldo, 0);
   const cashInv = cashTotal - cashLiq;
@@ -4383,6 +4897,9 @@ function WorkingCapitalSection() {
 
   const tipoColors = { Banco: T.blue, Bursátil: T.purple, Proveedor: T.amber, Operativo: T.green };
 
+  if (detail === "ar") return <ArDetailView onBack={() => setDetail(null)} />;
+  if (detail === "ap") return <ApDetailView onBack={() => setDetail(null)} />;
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 18, animation: "fadeUp .5s ease" }}>
       {/* Hero KPIs */}
@@ -4390,9 +4907,9 @@ function WorkingCapitalSection() {
         <OpKpi icon="account_balance" label="Caja total disponible" value={fmtShort(cashTotal * 1000)} sub={`${WC_BANCOS.length} cuentas activas`} accent={T.navy} />
         <OpKpi icon="payments" label="Liquidez inmediata" value={fmtShort(cashLiq * 1000)} sub="Vista + 24h" accent={T.green} />
         <OpKpi icon="trending_up" label="Inversiones" value={fmtShort(cashInv * 1000)} sub="Plazo ≥ 28 días" accent={T.blue} />
-        <OpKpi icon="receipt_long" label="Cuentas por cobrar" value={fmtShort(totalAR * 1000)} sub={`${arRiesgoPct.toFixed(1)}% en aging`} accent={T.amber} />
-        <OpKpi icon="payments" label="Cuentas por pagar" value={fmtShort(totalAP * 1000)} sub={apVencidas > 0 ? `${fmtShort(apVencidas * 1000)} vencidas` : "Sin vencidas"} accent={apVencidas > 0 ? T.red : T.purple} />
-        <OpKpi icon="schedule" label="Ciclo de conversión" value={`${ccc} d`} sub={`DSO ${dso} · DPO ${dpo}`} accent={ccc < 0 ? T.green : T.amber} />
+        <OpKpi icon="receipt_long" label="Cuentas por cobrar" value={fmtShort(totalAR * 1000)} sub={`${arRiesgoPct.toFixed(1)}% en mora`} accent={T.amber} glow onClick={() => setDetail("ar")} />
+        <OpKpi icon="payments" label="Cuentas por pagar" value={fmtShort(totalAP * 1000)} sub={apVencidas > 0 ? `${fmtShort(apVencidas * 1000)} vencidas` : "Sin vencidas"} accent={apVencidas > 0 ? T.red : T.purple} glow onClick={() => setDetail("ap")} />
+        <OpKpi icon="schedule" label="Ciclo de conversión" value={`${ccc} d`} sub={`Cobro ${dso}d · Pago ${dpo}d`} accent={ccc < 0 ? T.green : T.amber} />
       </div>
 
       {/* Cash position + Credit lines */}
@@ -4456,7 +4973,7 @@ function WorkingCapitalSection() {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 14 }}>
         <div style={opCard}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-            <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: 0 }}>Aging cuentas por cobrar</h3>
+            <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: 0 }}>Antigüedad de cuentas por cobrar</h3>
             <span style={{ fontSize: 11, color: T.navy, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace" }}>{fmtShort(totalAR * 1000)}</span>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -4478,7 +4995,7 @@ function WorkingCapitalSection() {
 
         <div style={opCard}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-            <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: 0 }}>Aging cuentas por pagar</h3>
+            <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: 0 }}>Antigüedad de cuentas por pagar</h3>
             <span style={{ fontSize: 11, color: T.navy, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace" }}>{fmtShort(totalAP * 1000)}</span>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -4547,7 +5064,7 @@ function WorkingCapitalSection() {
 
       {/* Brechas de liquidez */}
       <div style={opCard}>
-        <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: "0 0 14px" }}>Brecha de liquidez por bucket temporal</h3>
+        <h3 style={{ fontSize: 13, fontWeight: 800, color: T.navy, margin: "0 0 14px" }}>Brecha de liquidez por rango temporal</h3>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12 }}>
           {[
             { bucket: "≤ 7 días", entradas: 33300, salidas: 22200, color: T.green },
@@ -4573,17 +5090,17 @@ function WorkingCapitalSection() {
       <div style={{ ...opCard, background: `linear-gradient(135deg, ${T.blueLight}, ${T.surface})` }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 14 }}>
           <div>
-            <div style={{ fontSize: 10, fontWeight: 800, color: T.textTertiary, letterSpacing: 1, textTransform: "uppercase", marginBottom: 4 }}>Capital de trabajo neto</div>
+            <div style={{ fontSize: 10, fontWeight: 800, color: T.text, letterSpacing: 1, textTransform: "uppercase", marginBottom: 4 }}>Capital de trabajo neto</div>
             <div style={{ fontSize: 28, fontWeight: 900, color: T.navy, fontFamily: "'JetBrains Mono', monospace" }}>{fmtShort(wcNeto * 1000)}</div>
             <div style={{ fontSize: 11, color: T.textSecondary, marginTop: 4 }}>Caja {fmtShort(cashTotal * 1000)} + AR {fmtShort(totalAR * 1000)} − AP {fmtShort(totalAP * 1000)}</div>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, auto)", gap: 22 }}>
             <div>
-              <div style={{ fontSize: 10, fontWeight: 700, color: T.textTertiary, letterSpacing: 0.6, textTransform: "uppercase" }}>Quick ratio</div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: T.textTertiary, letterSpacing: 0.6, textTransform: "uppercase" }}>Prueba ácida</div>
               <div style={{ fontSize: 18, fontWeight: 900, color: T.green, fontFamily: "'JetBrains Mono', monospace" }}>1.42×</div>
             </div>
             <div>
-              <div style={{ fontSize: 10, fontWeight: 700, color: T.textTertiary, letterSpacing: 0.6, textTransform: "uppercase" }}>Current ratio</div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: T.textTertiary, letterSpacing: 0.6, textTransform: "uppercase" }}>Razón circulante</div>
               <div style={{ fontSize: 18, fontWeight: 900, color: T.green, fontFamily: "'JetBrains Mono', monospace" }}>1.68×</div>
             </div>
             <div>
@@ -4610,7 +5127,7 @@ function DetailView({ client: c }) {
     { id: "financiero", label: "Financiero" },
     { id: "pasivos", label: "Pasivos" },
     { id: "buro", label: "Buró de Crédito" },
-    { id: "conclusiones", label: "Conclusiones IA" },
+    { id: "conclusiones", label: "Análisis de Riesgos" },
   ];
 
   return (
@@ -5211,6 +5728,17 @@ function TabFinanciero({ c }) {
 }
 
 // -- PASIVOS --
+const PASIVO_COLORS = {
+  "BANAMEX": "#1F3A5F",
+  "SANTANDER": "#7A4848",
+  "BBVA": "#3D6792",
+  "BANORTE": "#8B7355",
+  "BANBAJIO": "#6B5876",
+  "ACTIVE LEAS.": "#7A6A5A",
+  "ENGEN CAP.": "#4A6B5C",
+  "ARR. BANORTE": "#5C5C5C",
+};
+
 function TabPasivos({ c }) {
   const p = c.pasivosFinancieros;
   return (
@@ -5225,11 +5753,12 @@ function TabPasivos({ c }) {
         <div style={{ padding: 20 }}>
           {p.principales.map((d, i) => {
             const pct = p.totalSaldo > 0 ? (d.saldo / p.totalSaldo) * 100 : 0;
+            const barColor = PASIVO_COLORS[d.institucion] || "#5C5C5C";
             return (
               <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: i < p.principales.length - 1 ? 10 : 0 }}>
                 <span style={{ width: 90, fontSize: 11, fontWeight: 600, color: T.textSecondary, textAlign: "right", flexShrink: 0 }}>{d.institucion}</span>
                 <div style={{ flex: 1, height: 24, background: T.surfaceAlt, borderRadius: 4, overflow: "hidden", position: "relative" }}>
-                  <div style={{ height: "100%", width: `${pct}%`, background: d.color, borderRadius: 4, opacity: .75 }} />
+                  <div style={{ height: "100%", width: `${pct}%`, background: barColor, borderRadius: 4 }} />
                 </div>
                 <span style={{ width: 50, fontSize: 11, fontWeight: 700, color: T.text, textAlign: "right", flexShrink: 0, fontFamily: "'JetBrains Mono', monospace" }}>{pct.toFixed(1)}%</span>
                 <span style={{ width: 60, fontSize: 11, fontWeight: 600, color: T.textSecondary, textAlign: "right", flexShrink: 0 }}>{fmtShort(d.saldo)}</span>
