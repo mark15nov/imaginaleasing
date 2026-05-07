@@ -42,6 +42,7 @@ const CLIENTS = [
     },
     activo: {
       descripcionGeneral: "Equipo de Subestaciones Eléctricas Transformadoras",
+      ilustracion: "/abc-aluminum/asset-photo.png",
       operaciones: [
         {
           tipo: "Arrendamiento Puro",
@@ -62,6 +63,7 @@ const CLIENTS = [
       ],
       totalGeneralUSD: 2116835.10,
     },
+    organigrama: "/abc-aluminum/organigrama.png",
     buroCredito: {
       puntaje: 771, gradoRiesgo: "A-1", incumplimiento: "0.9%",
       cuentasAbiertas: 94, montoOriginal: 2824406, saldoActual: 2079889,
@@ -662,6 +664,7 @@ function KpiCard({ label, value, color, raw }) {
 
 function TabGeneral({ c }) {
   return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16 }}>
       <div style={C.card}>
         <div style={C.head}><span style={C.icon}>◉</span><h2 style={C.title}>Información de la Empresa</h2></div>
@@ -701,6 +704,19 @@ function TabGeneral({ c }) {
         </div>
       </div>
     </div>
+    {c.organigrama && (
+      <div style={C.card}>
+        <div style={C.head}><span style={C.icon}>⌬</span><h2 style={C.title}>Organigrama Directivo</h2></div>
+        <div style={{ padding: 18, background: "rgba(255,255,255,0.015)", overflowX: "auto" }}>
+          <img
+            src={c.organigrama}
+            alt={`Organigrama directivo — ${c.nombre}`}
+            style={{ width: "100%", minWidth: 720, height: "auto", borderRadius: 8, border: "1px solid rgba(255,255,255,0.06)", background: "#fff" }}
+          />
+        </div>
+      </div>
+    )}
+    </div>
   );
 }
 
@@ -722,6 +738,20 @@ function TabActivo({ c }) {
           </div>
         </div>
       </div>
+
+      {/* Asset illustration */}
+      {a.ilustracion && (
+        <div style={C.card}>
+          <div style={C.head}><span style={C.icon}>▣</span><h2 style={C.title}>Ilustración del Activo</h2></div>
+          <div style={{ padding: 18, display: "flex", justifyContent: "center", background: "rgba(255,255,255,0.015)" }}>
+            <img
+              src={a.ilustracion}
+              alt={`Ilustración del activo — ${a.descripcionGeneral}`}
+              style={{ maxWidth: "100%", height: "auto", maxHeight: 480, borderRadius: 8, border: "1px solid rgba(255,255,255,0.06)", objectFit: "contain" }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Operation cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: 16 }}>

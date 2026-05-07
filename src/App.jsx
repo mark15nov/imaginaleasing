@@ -64,6 +64,7 @@ const CLIENTS = [
     },
     activo: {
       descripcionGeneral: "Equipo de Subestaciones Eléctricas Transformadoras",
+      ilustracion: "/abc-aluminum/asset-photo.png",
       operaciones: [
         { tipo: "Arrendamiento Puro", items: [
           { descripcion: "Equipo de Suministro SIESSA", costoUSD: 1292204 },
@@ -76,6 +77,7 @@ const CLIENTS = [
       ],
       totalGeneralUSD: 2116835.10,
     },
+    organigrama: "/abc-aluminum/organigrama.png",
     buroCredito: { puntaje: 771, gradoRiesgo: "A-1", incumplimiento: "0.9%", cuentasAbiertas: 94, montoOriginal: 2824406, saldoActual: 2079889, estatus: "Vigente — Sin atraso" },
     pasivosFinancieros: {
       totalOriginal: 2543270067, totalSaldo: 1910349175,
@@ -4678,10 +4680,18 @@ function TabEmpresa({ c }) {
       <div style={{ ...card, gridColumn: "1 / -1" }}>
         {cardHead("Instalaciones")}
         <div style={{ padding: 18, display: "grid", gridTemplateColumns: "180px 1fr", gap: 18, alignItems: "center" }}>
-          <div style={{ width: 180, height: 130, background: T.surfaceAlt, borderRadius: T.radiusSm, border: `1px dashed ${T.border}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: T.textTertiary }}>
-            <span className="material-symbols-outlined" style={{ fontSize: 32 }}>image</span>
-            <span style={{ fontSize: 10, marginTop: 6, fontWeight: 600 }}>Foto pendiente</span>
-          </div>
+          {c.activo?.ilustracion ? (
+            <img
+              src={c.activo.ilustracion}
+              alt={`Ilustración del activo — ${c.nombre}`}
+              style={{ width: 180, height: 130, objectFit: "cover", borderRadius: T.radiusSm, border: `1px solid ${T.border}` }}
+            />
+          ) : (
+            <div style={{ width: 180, height: 130, background: T.surfaceAlt, borderRadius: T.radiusSm, border: `1px dashed ${T.border}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: T.textTertiary }}>
+              <span className="material-symbols-outlined" style={{ fontSize: 32 }}>image</span>
+              <span style={{ fontSize: 10, marginTop: 6, fontWeight: 600 }}>Foto pendiente</span>
+            </div>
+          )}
           <div>
             <p style={{ fontSize: 13, color: T.text, lineHeight: 1.6, margin: 0 }}>{e.instalaciones}</p>
             <div style={{ marginTop: 12, fontSize: 11, color: T.textSecondary }}><strong>Domicilio:</strong> {c.direccion}</div>
@@ -4690,16 +4700,28 @@ function TabEmpresa({ c }) {
       </div>
 
       <div style={{ ...card, gridColumn: "1 / -1" }}>
-        {cardHead("Organigrama", "Visualización pendiente · cargar archivo desde drive")}
-        <div style={{ padding: 24, display: "flex", flexDirection: "column", alignItems: "center", gap: 18 }}>
-          <div style={{ padding: "10px 22px", background: T.navy, color: "#fff", borderRadius: T.radiusSm, fontSize: 12, fontWeight: 700 }}>{c.obligadoSolidario || "Director General"}</div>
-          <div style={{ width: 1, height: 22, background: T.border }} />
-          <div style={{ display: "flex", gap: 24, flexWrap: "wrap", justifyContent: "center" }}>
-            {["Operaciones", "Finanzas", "Comercial", "Administración"].map(area => (
-              <div key={area} style={{ padding: "8px 16px", background: T.blueLight, color: T.navy, borderRadius: T.radiusSm, fontSize: 11, fontWeight: 700, border: `1px solid ${T.blue}30` }}>{area}</div>
-            ))}
+        {c.organigrama
+          ? cardHead("Organigrama Directivo", "Estructura organizacional reportada por el cliente")
+          : cardHead("Organigrama", "Visualización pendiente · cargar archivo desde drive")}
+        {c.organigrama ? (
+          <div style={{ padding: 18, background: T.surfaceAlt, overflowX: "auto" }}>
+            <img
+              src={c.organigrama}
+              alt={`Organigrama directivo — ${c.nombre}`}
+              style={{ width: "100%", minWidth: 720, height: "auto", borderRadius: T.radiusSm, border: `1px solid ${T.border}`, background: "#fff", display: "block" }}
+            />
           </div>
-        </div>
+        ) : (
+          <div style={{ padding: 24, display: "flex", flexDirection: "column", alignItems: "center", gap: 18 }}>
+            <div style={{ padding: "10px 22px", background: T.navy, color: "#fff", borderRadius: T.radiusSm, fontSize: 12, fontWeight: 700 }}>{c.obligadoSolidario || "Director General"}</div>
+            <div style={{ width: 1, height: 22, background: T.border }} />
+            <div style={{ display: "flex", gap: 24, flexWrap: "wrap", justifyContent: "center" }}>
+              {["Operaciones", "Finanzas", "Comercial", "Administración"].map(area => (
+                <div key={area} style={{ padding: "8px 16px", background: T.blueLight, color: T.navy, borderRadius: T.radiusSm, fontSize: 11, fontWeight: 700, border: `1px solid ${T.blue}30` }}>{area}</div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -4997,6 +5019,19 @@ function TabActivo({ c }) {
               </div>
             </div>
           </div>
+
+          {a.ilustracion && (
+            <div style={card}>
+              {cardHead("Ilustración del Activo")}
+              <div style={{ padding: 18, display: "flex", justifyContent: "center", background: T.surfaceAlt }}>
+                <img
+                  src={a.ilustracion}
+                  alt={`Ilustración del activo — ${a.descripcionGeneral}`}
+                  style={{ maxWidth: "100%", height: "auto", maxHeight: 460, borderRadius: T.radiusSm, border: `1px solid ${T.border}`, objectFit: "contain", background: "#fff" }}
+                />
+              </div>
+            </div>
+          )}
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 14 }}>
             {a.operaciones.map((op, oi) => (
