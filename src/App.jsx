@@ -680,8 +680,16 @@ const NAV_SECTIONS = [
     label: "Finanzas",
     icon: "account_balance",
     items: [
-      { id: "fin-quanto", label: "Cartera Quanto" },
       { id: "working-capital", label: "Capital de Trabajo Operativo" },
+    ],
+  },
+  {
+    id: "cobranza",
+    label: "Cobranza",
+    icon: "paid",
+    items: [
+      { id: "cobranza-dashboard", label: "Dashboard & Alertas" },
+      { id: "reporte-cobranza", label: "Reporte Cobranza" },
       { id: "recordatorios", label: "Recordatorios de Pago" },
     ],
   },
@@ -691,10 +699,8 @@ const NAV_SECTIONS = [
     icon: "build",
     items: [
       { id: "op-general", label: "General" },
-      { id: "op-colocacion", label: "Colocación" },
-      { id: "op-seguros", label: "Seguros" },
-      { id: "op-facturacion", label: "Facturación / Proveedores" },
-      { id: "op-vencimientos", label: "Vencimientos" },
+      { id: "op-admin-activos", label: "Administración de Activos" },
+      { id: "op-reporte-operaciones", label: "Reporte Operaciones" },
     ],
   },
   {
@@ -718,6 +724,7 @@ export default function App() {
     Object.fromEntries(NAV_SECTIONS.map(s => [s.id, s.items[0].id]))
   );
   const [clientId, setClientId] = useState(null);
+  const [adminActivosTab, setAdminActivosTab] = useState("colocacion");
 
   // CRM — estado compartido entre Pipeline / Reportes / Bitácora
   const [crmDeals, setCrmDeals] = useState(CRM_DEALS_INIT);
@@ -798,13 +805,12 @@ export default function App() {
             {activeItem === "crm-pipeline" && <CrmPipelineSection deals={crmDeals} activities={crmActivities} onAddDeal={addDeal} onUpdateDeal={updateDeal} onAddActivity={addActivity} />}
             {activeItem === "crm-reportes" && <CrmReportesSection deals={crmDeals} activities={crmActivities} />}
             {activeItem === "crm-bitacora" && <CrmBitacoraSection deals={crmDeals} activities={crmActivities} onAddActivity={addActivity} />}
-            {activeItem === "fin-quanto" && <QuantoSection onSelectClient={openClient} />}
+            {activeItem === "cobranza-dashboard" && <CobranzaDashboardSection />}
+            {activeItem === "reporte-cobranza" && <CobranzaReporteSection onSelectClient={openClient} />}
             {activeItem === "recordatorios" && <RemindersSection />}
-            {activeItem === "op-general" && <OperacionGeneralSection onGoTab={navigateItem} />}
-            {activeItem === "op-colocacion" && <OperacionColocacionSection />}
-            {activeItem === "op-seguros" && <OperacionSegurosSection />}
-            {activeItem === "op-facturacion" && <OperacionFacturacionSection />}
-            {activeItem === "op-vencimientos" && <OperacionVencimientosSection />}
+            {activeItem === "op-general" && <OperacionGeneralSection onGoSubTab={(sub) => { setAdminActivosTab(sub); navigateItem("op-admin-activos"); }} />}
+            {activeItem === "op-admin-activos" && <AdminActivosSection activeTab={adminActivosTab} onTabChange={setAdminActivosTab} />}
+            {activeItem === "op-reporte-operaciones" && <ReporteOperacionesSection onSelectClient={openClient} />}
             {activeItem === "riesgos-panorama" && <RiesgosPanoramaSection onSelectClient={openClient} />}
             {activeItem === "riesgos-expedientes" && <RiesgosExpedientesSection onSelectClient={openClient} />}
             {activeItem === "riesgos-analisis" && <RiesgosAnalisisSection />}
@@ -1220,46 +1226,17 @@ const QUANTO_OPS = [
   {contrato:"TSG1301-002-001",idArr:1491,nombre:"TECH SOLUTIONS DE GUADALAJARA, S.A. DE C.V.",bien:"UPS Y CLIMATIZACIÓN",fechaDesembolso:"2026-02-25",fecha1erPago:"2026-03-25",fechaVencimiento:"2029-02-25",valorBienSinIVA:3850000,pagoInicial:0,montoFinanciado:3850000,rentasFijas:135800,tasa:20.0,tir:2.36,plazo:36,totalRentas:4888800,rentaPorDevengar:4753000,opcionCompra:77000,alCorriente:4753000,d30:0,d60:0,d90:0,dmas90:0,total:4753000,diasVencidos:0},
 ];
 
-// ── QUANTO SECTION (EXPANDED) ──
-function QuantoSection({ onSelectClient }) {
-  const [subTab, setSubTab] = useState("dashboard");
-  const [sortCol, setSortCol] = useState(null);
-  const [sortDir, setSortDir] = useState("asc");
-  const [searchOps, setSearchOps] = useState("");
-
-  const handleSort = (col) => {
-    if (sortCol === col) setSortDir(d => d === "asc" ? "desc" : "asc");
-    else { setSortCol(col); setSortDir("desc"); }
-  };
-
-  const sortedOps = useMemo(() => {
-    let list = [...QUANTO_OPS];
-    if (searchOps) {
-      const q = searchOps.toLowerCase();
-      list = list.filter(o => o.nombre.toLowerCase().includes(q) || o.contrato.toLowerCase().includes(q) || o.bien.toLowerCase().includes(q));
-    }
-    if (sortCol) {
-      list.sort((a, b) => {
-        const va = a[sortCol], vb = b[sortCol];
-        let cmp = typeof va === "string" ? va.localeCompare(vb) : va - vb;
-        return sortDir === "asc" ? cmp : -cmp;
-      });
-    }
-    return list;
-  }, [sortCol, sortDir, searchOps]);
-
-  // ── Computed Analytics ──
+// ── COBRANZA — DASHBOARD & ALERTAS ──
+function CobranzaDashboardSection() {
   const totalValorBien = QUANTO_OPS.reduce((s, o) => s + o.valorBienSinIVA, 0);
   const totalRentasDevengar = QUANTO_OPS.reduce((s, o) => s + o.rentaPorDevengar, 0);
   const totalFinanciado = QUANTO_OPS.reduce((s, o) => s + o.montoFinanciado, 0);
   const totalRentasMensuales = QUANTO_OPS.reduce((s, o) => s + o.rentasFijas, 0);
-  const morosos = QUANTO_OPS.filter(o => o.d30 > 0 || o.d60 > 0 || o.d90 > 0 || o.dmas90 > 0).length;
   const avgTasa = QUANTO_OPS.reduce((s, o) => s + o.tasa, 0) / QUANTO_OPS.length;
   const uniqueClients = [...new Set(QUANTO_OPS.map(o => o.nombre))];
   const topClientExposure = QUANTO_OPS.filter(o => o.nombre === uniqueClients[0]).reduce((s, o) => s + o.montoFinanciado, 0);
   const concentrationPct = (topClientExposure / totalFinanciado * 100);
   const avgPlazoRestante = QUANTO_OPS.reduce((s, o) => s + o.plazo, 0) / QUANTO_OPS.length;
-  const totalAlCorriente = QUANTO_OPS.reduce((s, o) => s + o.alCorriente, 0);
   const totalMora = QUANTO_OPS.reduce((s, o) => s + o.d30 + o.d60 + o.d90 + o.dmas90, 0);
   const morosidadPct = totalFinanciado > 0 ? (totalMora / totalFinanciado * 100) : 0;
 
@@ -1306,21 +1283,6 @@ function QuantoSection({ onSelectClient }) {
     { metric: "Ingreso mensual recurrente", valor: fmt(totalRentasMensuales), benchmark: "Ref.", status: "info" },
   ];
 
-  const SortHeader = ({ col, label }) => {
-    const active = sortCol === col;
-    return (
-      <button onClick={() => handleSort(col)} style={{ background: "none", border: "none", padding: "11px 0", cursor: "pointer", display: "flex", alignItems: "center", gap: 2, fontSize: 9, fontWeight: 700, color: active ? T.navy : T.textTertiary, textTransform: "uppercase", letterSpacing: 0.6, fontFamily: "inherit", textAlign: "left" }}>
-        {label}<span style={{ fontSize: 9, color: active ? T.blue : "transparent" }}>{active ? (sortDir === "asc" ? "↑" : "↓") : "·"}</span>
-      </button>
-    );
-  };
-
-  const subTabs = [
-    { id: "dashboard", label: "Dashboard & Alertas" },
-    { id: "operaciones", label: "Reporte Operaciones" },
-    { id: "cobranza", label: "Reporte Cobranza" },
-  ];
-
   return (
     <div style={{ animation: "fadeUp .5s ease" }}>
       {/* KPIs strip */}
@@ -1333,18 +1295,7 @@ function QuantoSection({ onSelectClient }) {
         <Kpi label="Morosidad" value={`${morosidadPct.toFixed(1)}%`} icon="warning" accent={morosidadPct > 0 ? T.red : T.green} />
       </div>
 
-      {/* Sub tabs */}
-      <div style={{ display: "flex", gap: 4, marginBottom: 18, background: T.surfaceAlt, borderRadius: T.radiusSm, padding: 3, width: "fit-content" }}>
-        {subTabs.map(t => (
-          <button key={t.id} onClick={() => { setSubTab(t.id); setSortCol(null); }} style={{ padding: "7px 16px", border: "none", borderRadius: 5, background: subTab === t.id ? T.surface : "transparent", color: subTab === t.id ? T.navy : T.textTertiary, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", boxShadow: subTab === t.id ? T.shadow : "none" }}>
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      {/* ═══ DASHBOARD & ALERTAS ═══ */}
-      {subTab === "dashboard" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
           {/* ALERTS */}
           <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radius, overflow: "hidden", boxShadow: T.shadow }}>
             <div style={{ padding: "14px 20px", borderBottom: `1px solid ${T.borderLight}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -1498,105 +1449,208 @@ function QuantoSection({ onSelectClient }) {
             </div>
           </div>
         </div>
-      )}
+    </div>
+  );
+}
 
-      {/* ═══ OPERACIONES TABLE ═══ */}
-      {subTab === "operaciones" && (
-        <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radius, overflow: "hidden", boxShadow: T.shadow, overflowX: "auto" }}>
-          <div style={{ padding: "12px 16px", borderBottom: `1px solid ${T.borderLight}`, display: "flex", alignItems: "center", gap: 8 }}>
-            <span className="material-symbols-outlined" style={{ fontSize: 18, color: T.textTertiary }}>search</span>
-            <input value={searchOps} onChange={e => setSearchOps(e.target.value)} placeholder="Buscar por empresa, contrato o bien..." style={{ flex: 1, border: "none", outline: "none", fontSize: 13, color: T.text, background: "transparent", fontFamily: "inherit" }} />
-            {searchOps && <span className="material-symbols-outlined" onClick={() => setSearchOps("")} style={{ fontSize: 16, color: T.textTertiary, cursor: "pointer" }}>close</span>}
-          </div>
-          <div style={{ minWidth: 1200, display: "grid", gridTemplateColumns: "100px minmax(140px,1.5fr) 85px 85px 85px 70px 90px 90px 90px 95px", padding: "0 16px", borderBottom: `1px solid ${T.border}`, background: T.surfaceAlt, gap: 4 }}>
-            <SortHeader col="contrato" label="ID Contrato" />
-            <SortHeader col="nombre" label="Empresa" />
-            <SortHeader col="fechaDesembolso" label="Desembolso" />
-            <SortHeader col="fechaVencimiento" label="Vencimiento" />
-            <SortHeader col="fecha1erPago" label="1er Pago" />
-            <SortHeader col="pagoInicial" label="P. Inicial" />
-            <SortHeader col="valorBienSinIVA" label="Valor Bien" />
-            <SortHeader col="tasa" label="Tasa / TIR" />
-            <SortHeader col="totalRentas" label="Total Rentas" />
-            <SortHeader col="rentaPorDevengar" label="x Devengar" />
-          </div>
-          {sortedOps.map((o, i) => (
-            <div key={o.contrato} style={{ minWidth: 1200, display: "grid", gridTemplateColumns: "100px minmax(140px,1.5fr) 85px 85px 85px 70px 90px 90px 90px 95px", padding: "12px 16px", borderBottom: i < sortedOps.length - 1 ? `1px solid ${T.borderLight}` : "none", gap: 4, fontSize: 11, alignItems: "center", animation: `fadeUp .3s ease ${i*.05}s both` }}>
-              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, fontWeight: 600, color: T.navy }}>{o.contrato}</span>
-              <div>
-                <div onClick={() => { const cl = CLIENTS.find(cl => o.nombre.toUpperCase().includes(cl.razonSocial.split(" SA")[0])); if (cl && onSelectClient) onSelectClient(cl.id); }} style={{ fontSize: 11, fontWeight: 600, color: T.blue, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: "pointer", textDecoration: "underline", textDecorationColor: "transparent", transition: "text-decoration-color .2s" }} onMouseEnter={e => e.target.style.textDecorationColor = T.blue} onMouseLeave={e => e.target.style.textDecorationColor = "transparent"}>{o.nombre.length > 30 ? o.nombre.slice(0,28)+"…" : o.nombre}</div>
-                <div style={{ fontSize: 9, color: T.textTertiary }}>{o.bien}</div>
-              </div>
-              <span style={{ color: T.textSecondary }}>{o.fechaDesembolso.slice(5)}</span>
-              <span style={{ color: T.textSecondary }}>{o.fechaVencimiento.slice(5)}</span>
-              <span style={{ color: T.textSecondary }}>{o.fecha1erPago.slice(5)}</span>
-              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: T.textSecondary }}>{fmtShort(o.pagoInicial)}</span>
-              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, fontWeight: 700, color: T.text }}>{fmtShort(o.valorBienSinIVA)}</span>
-              <div>
-                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, fontWeight: 600, color: T.navy }}>{o.tasa}%</div>
-                <div style={{ fontSize: 9, color: T.textTertiary }}>TIR {o.tir}%</div>
-              </div>
-              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, fontWeight: 600, color: T.text }}>{fmtShort(o.totalRentas)}</span>
-              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, fontWeight: 700, color: T.blue }}>{fmtShort(o.rentaPorDevengar)}</span>
+// ═══════════════════════════════════════════════
+// OPERACIÓN — REPORTE OPERACIONES
+// ═══════════════════════════════════════════════
+function ReporteOperacionesSection({ onSelectClient }) {
+  const [sortCol, setSortCol] = useState(null);
+  const [sortDir, setSortDir] = useState("asc");
+  const [search, setSearch] = useState("");
+
+  const handleSort = (col) => {
+    if (sortCol === col) setSortDir(d => d === "asc" ? "desc" : "asc");
+    else { setSortCol(col); setSortDir("desc"); }
+  };
+
+  const sortedOps = useMemo(() => {
+    let list = [...QUANTO_OPS];
+    if (search) {
+      const q = search.toLowerCase();
+      list = list.filter(o => o.nombre.toLowerCase().includes(q) || o.contrato.toLowerCase().includes(q) || o.bien.toLowerCase().includes(q));
+    }
+    if (sortCol) {
+      list.sort((a, b) => {
+        const va = a[sortCol], vb = b[sortCol];
+        let cmp = typeof va === "string" ? va.localeCompare(vb) : va - vb;
+        return sortDir === "asc" ? cmp : -cmp;
+      });
+    }
+    return list;
+  }, [sortCol, sortDir, search]);
+
+  const totalValorBien = QUANTO_OPS.reduce((s, o) => s + o.valorBienSinIVA, 0);
+  const totalRentas = QUANTO_OPS.reduce((s, o) => s + o.totalRentas, 0);
+  const totalRentasDevengar = QUANTO_OPS.reduce((s, o) => s + o.rentaPorDevengar, 0);
+  const totalFinanciado = QUANTO_OPS.reduce((s, o) => s + o.montoFinanciado, 0);
+
+  const SortHeader = ({ col, label }) => {
+    const active = sortCol === col;
+    return (
+      <button onClick={() => handleSort(col)} style={{ background: "none", border: "none", padding: "11px 0", cursor: "pointer", display: "flex", alignItems: "center", gap: 2, fontSize: 9, fontWeight: 700, color: active ? T.navy : T.textTertiary, textTransform: "uppercase", letterSpacing: 0.6, fontFamily: "inherit", textAlign: "left" }}>
+        {label}<span style={{ fontSize: 9, color: active ? T.blue : "transparent" }}>{active ? (sortDir === "asc" ? "↑" : "↓") : "·"}</span>
+      </button>
+    );
+  };
+
+  return (
+    <div style={{ animation: "fadeUp .5s ease" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 20 }}>
+        <Kpi label="Valor Bienes s/IVA" value={fmt(totalValorBien)} icon="factory" />
+        <Kpi label="Total Financiado" value={fmt(totalFinanciado)} icon="credit_card" accent={T.blue} />
+        <Kpi label="Rentas por Devengar" value={fmt(totalRentasDevengar)} icon="request_quote" accent={T.amber} />
+        <Kpi label="Contratos Activos" value={QUANTO_OPS.length.toString()} icon="description" accent={T.green} />
+      </div>
+
+      <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radius, overflow: "hidden", boxShadow: T.shadow, overflowX: "auto" }}>
+        <div style={{ padding: "12px 16px", borderBottom: `1px solid ${T.borderLight}`, display: "flex", alignItems: "center", gap: 8 }}>
+          <span className="material-symbols-outlined" style={{ fontSize: 18, color: T.textTertiary }}>search</span>
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por empresa, contrato o bien..." style={{ flex: 1, border: "none", outline: "none", fontSize: 13, color: T.text, background: "transparent", fontFamily: "inherit" }} />
+          {search && <span className="material-symbols-outlined" onClick={() => setSearch("")} style={{ fontSize: 16, color: T.textTertiary, cursor: "pointer" }}>close</span>}
+        </div>
+        <div style={{ minWidth: 1200, display: "grid", gridTemplateColumns: "100px minmax(140px,1.5fr) 85px 85px 85px 70px 90px 90px 90px 95px", padding: "0 16px", borderBottom: `1px solid ${T.border}`, background: T.surfaceAlt, gap: 4 }}>
+          <SortHeader col="contrato" label="ID Contrato" />
+          <SortHeader col="nombre" label="Empresa" />
+          <SortHeader col="fechaDesembolso" label="Desembolso" />
+          <SortHeader col="fechaVencimiento" label="Vencimiento" />
+          <SortHeader col="fecha1erPago" label="1er Pago" />
+          <SortHeader col="pagoInicial" label="P. Inicial" />
+          <SortHeader col="valorBienSinIVA" label="Valor Bien" />
+          <SortHeader col="tasa" label="Tasa / TIR" />
+          <SortHeader col="totalRentas" label="Total Rentas" />
+          <SortHeader col="rentaPorDevengar" label="x Devengar" />
+        </div>
+        {sortedOps.map((o, i) => (
+          <div key={o.contrato} style={{ minWidth: 1200, display: "grid", gridTemplateColumns: "100px minmax(140px,1.5fr) 85px 85px 85px 70px 90px 90px 90px 95px", padding: "12px 16px", borderBottom: i < sortedOps.length - 1 ? `1px solid ${T.borderLight}` : "none", gap: 4, fontSize: 11, alignItems: "center", animation: `fadeUp .3s ease ${i*.05}s both` }}>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, fontWeight: 600, color: T.navy }}>{o.contrato}</span>
+            <div>
+              <div onClick={() => { const cl = CLIENTS.find(cl => o.nombre.toUpperCase().includes(cl.razonSocial.split(" SA")[0])); if (cl && onSelectClient) onSelectClient(cl.id); }} style={{ fontSize: 11, fontWeight: 600, color: T.blue, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: "pointer", textDecoration: "underline", textDecorationColor: "transparent", transition: "text-decoration-color .2s" }} onMouseEnter={e => e.target.style.textDecorationColor = T.blue} onMouseLeave={e => e.target.style.textDecorationColor = "transparent"}>{o.nombre.length > 30 ? o.nombre.slice(0,28)+"…" : o.nombre}</div>
+              <div style={{ fontSize: 9, color: T.textTertiary }}>{o.bien}</div>
             </div>
-          ))}
-          <div style={{ minWidth: 1200, display: "grid", gridTemplateColumns: "100px minmax(140px,1.5fr) 85px 85px 85px 70px 90px 90px 90px 95px", padding: "10px 16px", background: T.surfaceAlt, borderTop: `2px solid ${T.border}`, gap: 4, fontSize: 11, fontWeight: 800, alignItems: "center" }}>
-            <span></span><span style={{ color: T.navy }}>TOTALES ({QUANTO_OPS.length} contratos)</span><span></span><span></span><span></span><span></span>
-            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: T.navy }}>{fmtShort(totalValorBien)}</span>
-            <span></span>
-            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: T.navy }}>{fmtShort(QUANTO_OPS.reduce((s,o)=>s+o.totalRentas,0))}</span>
-            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: T.blue }}>{fmtShort(totalRentasDevengar)}</span>
+            <span style={{ color: T.textSecondary }}>{o.fechaDesembolso.slice(5)}</span>
+            <span style={{ color: T.textSecondary }}>{o.fechaVencimiento.slice(5)}</span>
+            <span style={{ color: T.textSecondary }}>{o.fecha1erPago.slice(5)}</span>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: T.textSecondary }}>{fmtShort(o.pagoInicial)}</span>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, fontWeight: 700, color: T.text }}>{fmtShort(o.valorBienSinIVA)}</span>
+            <div>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, fontWeight: 600, color: T.navy }}>{o.tasa}%</div>
+              <div style={{ fontSize: 9, color: T.textTertiary }}>TIR {o.tir}%</div>
+            </div>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, fontWeight: 600, color: T.text }}>{fmtShort(o.totalRentas)}</span>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, fontWeight: 700, color: T.blue }}>{fmtShort(o.rentaPorDevengar)}</span>
           </div>
+        ))}
+        <div style={{ minWidth: 1200, display: "grid", gridTemplateColumns: "100px minmax(140px,1.5fr) 85px 85px 85px 70px 90px 90px 90px 95px", padding: "10px 16px", background: T.surfaceAlt, borderTop: `2px solid ${T.border}`, gap: 4, fontSize: 11, fontWeight: 800, alignItems: "center" }}>
+          <span></span><span style={{ color: T.navy }}>TOTALES ({QUANTO_OPS.length} contratos)</span><span></span><span></span><span></span><span></span>
+          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: T.navy }}>{fmtShort(totalValorBien)}</span>
+          <span></span>
+          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: T.navy }}>{fmtShort(totalRentas)}</span>
+          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: T.blue }}>{fmtShort(totalRentasDevengar)}</span>
         </div>
-      )}
+      </div>
+    </div>
+  );
+}
 
-      {/* ═══ COBRANZA TABLE ═══ */}
-      {subTab === "cobranza" && (
-        <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radius, overflow: "hidden", boxShadow: T.shadow, overflowX: "auto" }}>
-          <div style={{ padding: "12px 16px", borderBottom: `1px solid ${T.borderLight}`, display: "flex", alignItems: "center", gap: 8 }}>
-            <span className="material-symbols-outlined" style={{ fontSize: 18, color: T.textTertiary }}>search</span>
-            <input value={searchOps} onChange={e => setSearchOps(e.target.value)} placeholder="Buscar por empresa, contrato o bien..." style={{ flex: 1, border: "none", outline: "none", fontSize: 13, color: T.text, background: "transparent", fontFamily: "inherit" }} />
-            {searchOps && <span className="material-symbols-outlined" onClick={() => setSearchOps("")} style={{ fontSize: 16, color: T.textTertiary, cursor: "pointer" }}>close</span>}
-          </div>
-          <div style={{ minWidth: 1050, display: "grid", gridTemplateColumns: "100px minmax(150px,1.8fr) 90px 55px 70px 70px 70px 80px 100px", padding: "0 16px", borderBottom: `1px solid ${T.border}`, background: T.surfaceAlt, gap: 4 }}>
-            <SortHeader col="contrato" label="ID Contrato" />
-            <SortHeader col="nombre" label="Empresa" />
-            <SortHeader col="rentasFijas" label="Monto Renta" />
-            <SortHeader col="plazo" label="Plazo" />
-            <SortHeader col="d30" label="30 días" />
-            <SortHeader col="d60" label="60 días" />
-            <SortHeader col="d90" label="90 días" />
-            <SortHeader col="dmas90" label="+90 días" />
-            <SortHeader col="total" label="Saldo Actual" />
-          </div>
-          {sortedOps.map((o, i) => {
-            const hasMora = o.d30 > 0 || o.d60 > 0 || o.d90 > 0 || o.dmas90 > 0;
-            return (
-              <div key={o.contrato} style={{ minWidth: 1050, display: "grid", gridTemplateColumns: "100px minmax(150px,1.8fr) 90px 55px 70px 70px 70px 80px 100px", padding: "12px 16px", borderBottom: i < sortedOps.length - 1 ? `1px solid ${T.borderLight}` : "none", gap: 4, fontSize: 11, alignItems: "center", animation: `fadeUp .3s ease ${i*.05}s both` }}>
-                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, fontWeight: 600, color: T.navy }}>{o.contrato}</span>
-                <span onClick={() => { const cl = CLIENTS.find(cl => o.nombre.toUpperCase().includes(cl.razonSocial.split(" SA")[0])); if (cl && onSelectClient) onSelectClient(cl.id); }} style={{ fontSize: 11, fontWeight: 600, color: T.blue, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: "pointer", textDecoration: "underline", textDecorationColor: "transparent", transition: "text-decoration-color .2s" }} onMouseEnter={e => e.target.style.textDecorationColor = T.blue} onMouseLeave={e => e.target.style.textDecorationColor = "transparent"}>{o.nombre.length > 35 ? o.nombre.slice(0,33)+"…" : o.nombre}</span>
-                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, fontWeight: 700, color: T.text }}>{fmt(o.rentasFijas)}</span>
-                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: T.textSecondary }}>{o.plazo}m</span>
-                <MoraCell value={o.d30} />
-                <MoraCell value={o.d60} />
-                <MoraCell value={o.d90} />
-                <MoraCell value={o.dmas90} severe />
-                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, fontWeight: 700, color: hasMora ? T.red : T.navy }}>{fmtShort(o.total)}</span>
-              </div>
-            );
-          })}
-          <div style={{ minWidth: 1050, display: "grid", gridTemplateColumns: "100px minmax(150px,1.8fr) 90px 55px 70px 70px 70px 80px 100px", padding: "10px 16px", background: T.surfaceAlt, borderTop: `2px solid ${T.border}`, gap: 4, fontSize: 11, fontWeight: 800, alignItems: "center" }}>
-            <span></span><span style={{ color: T.navy }}>TOTALES</span>
-            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: T.navy }}>{fmt(QUANTO_OPS.reduce((s,o)=>s+o.rentasFijas,0))}</span>
-            <span></span>
-            <MoraCell value={QUANTO_OPS.reduce((s,o)=>s+o.d30,0)} />
-            <MoraCell value={QUANTO_OPS.reduce((s,o)=>s+o.d60,0)} />
-            <MoraCell value={QUANTO_OPS.reduce((s,o)=>s+o.d90,0)} />
-            <MoraCell value={QUANTO_OPS.reduce((s,o)=>s+o.dmas90,0)} severe />
-            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, fontWeight: 800, color: T.navy }}>{fmtShort(QUANTO_OPS.reduce((s,o)=>s+o.total,0))}</span>
-          </div>
+// ═══════════════════════════════════════════════
+// COBRANZA — REPORTE
+// ═══════════════════════════════════════════════
+function CobranzaReporteSection({ onSelectClient }) {
+  const [sortCol, setSortCol] = useState(null);
+  const [sortDir, setSortDir] = useState("asc");
+  const [search, setSearch] = useState("");
+
+  const handleSort = (col) => {
+    if (sortCol === col) setSortDir(d => d === "asc" ? "desc" : "asc");
+    else { setSortCol(col); setSortDir("desc"); }
+  };
+
+  const sortedOps = useMemo(() => {
+    let list = [...QUANTO_OPS];
+    if (search) {
+      const q = search.toLowerCase();
+      list = list.filter(o => o.nombre.toLowerCase().includes(q) || o.contrato.toLowerCase().includes(q) || o.bien.toLowerCase().includes(q));
+    }
+    if (sortCol) {
+      list.sort((a, b) => {
+        const va = a[sortCol], vb = b[sortCol];
+        let cmp = typeof va === "string" ? va.localeCompare(vb) : va - vb;
+        return sortDir === "asc" ? cmp : -cmp;
+      });
+    }
+    return list;
+  }, [sortCol, sortDir, search]);
+
+  const totalRentaMensual = QUANTO_OPS.reduce((s, o) => s + o.rentasFijas, 0);
+  const totalSaldo = QUANTO_OPS.reduce((s, o) => s + o.total, 0);
+  const totalMora = QUANTO_OPS.reduce((s, o) => s + o.d30 + o.d60 + o.d90 + o.dmas90, 0);
+  const contratosEnMora = QUANTO_OPS.filter(o => o.d30 > 0 || o.d60 > 0 || o.d90 > 0 || o.dmas90 > 0).length;
+
+  const SortHeader = ({ col, label }) => {
+    const active = sortCol === col;
+    return (
+      <button onClick={() => handleSort(col)} style={{ background: "none", border: "none", padding: "11px 0", cursor: "pointer", display: "flex", alignItems: "center", gap: 2, fontSize: 9, fontWeight: 700, color: active ? T.navy : T.textTertiary, textTransform: "uppercase", letterSpacing: 0.6, fontFamily: "inherit", textAlign: "left" }}>
+        {label}<span style={{ fontSize: 9, color: active ? T.blue : "transparent" }}>{active ? (sortDir === "asc" ? "↑" : "↓") : "·"}</span>
+      </button>
+    );
+  };
+
+  return (
+    <div style={{ animation: "fadeUp .5s ease" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 20 }}>
+        <Kpi label="Renta Mensual" value={fmt(totalRentaMensual)} icon="payments" accent={T.green} />
+        <Kpi label="Saldo Actual" value={fmt(totalSaldo)} icon="account_balance_wallet" />
+        <Kpi label="Mora Total" value={fmt(totalMora)} icon="warning" accent={totalMora > 0 ? T.red : T.green} />
+        <Kpi label="Contratos en Mora" value={`${contratosEnMora} / ${QUANTO_OPS.length}`} icon="receipt_long" accent={contratosEnMora > 0 ? T.amber : T.green} />
+      </div>
+
+      <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radius, overflow: "hidden", boxShadow: T.shadow, overflowX: "auto" }}>
+        <div style={{ padding: "12px 16px", borderBottom: `1px solid ${T.borderLight}`, display: "flex", alignItems: "center", gap: 8 }}>
+          <span className="material-symbols-outlined" style={{ fontSize: 18, color: T.textTertiary }}>search</span>
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por empresa, contrato o bien..." style={{ flex: 1, border: "none", outline: "none", fontSize: 13, color: T.text, background: "transparent", fontFamily: "inherit" }} />
+          {search && <span className="material-symbols-outlined" onClick={() => setSearch("")} style={{ fontSize: 16, color: T.textTertiary, cursor: "pointer" }}>close</span>}
         </div>
-      )}
+        <div style={{ minWidth: 1050, display: "grid", gridTemplateColumns: "100px minmax(150px,1.8fr) 90px 55px 70px 70px 70px 80px 100px", padding: "0 16px", borderBottom: `1px solid ${T.border}`, background: T.surfaceAlt, gap: 4 }}>
+          <SortHeader col="contrato" label="ID Contrato" />
+          <SortHeader col="nombre" label="Empresa" />
+          <SortHeader col="rentasFijas" label="Monto Renta" />
+          <SortHeader col="plazo" label="Plazo" />
+          <SortHeader col="d30" label="30 días" />
+          <SortHeader col="d60" label="60 días" />
+          <SortHeader col="d90" label="90 días" />
+          <SortHeader col="dmas90" label="+90 días" />
+          <SortHeader col="total" label="Saldo Actual" />
+        </div>
+        {sortedOps.map((o, i) => {
+          const hasMora = o.d30 > 0 || o.d60 > 0 || o.d90 > 0 || o.dmas90 > 0;
+          return (
+            <div key={o.contrato} style={{ minWidth: 1050, display: "grid", gridTemplateColumns: "100px minmax(150px,1.8fr) 90px 55px 70px 70px 70px 80px 100px", padding: "12px 16px", borderBottom: i < sortedOps.length - 1 ? `1px solid ${T.borderLight}` : "none", gap: 4, fontSize: 11, alignItems: "center", animation: `fadeUp .3s ease ${i*.05}s both` }}>
+              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, fontWeight: 600, color: T.navy }}>{o.contrato}</span>
+              <span onClick={() => { const cl = CLIENTS.find(cl => o.nombre.toUpperCase().includes(cl.razonSocial.split(" SA")[0])); if (cl && onSelectClient) onSelectClient(cl.id); }} style={{ fontSize: 11, fontWeight: 600, color: T.blue, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: "pointer", textDecoration: "underline", textDecorationColor: "transparent", transition: "text-decoration-color .2s" }} onMouseEnter={e => e.target.style.textDecorationColor = T.blue} onMouseLeave={e => e.target.style.textDecorationColor = "transparent"}>{o.nombre.length > 35 ? o.nombre.slice(0,33)+"…" : o.nombre}</span>
+              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, fontWeight: 700, color: T.text }}>{fmt(o.rentasFijas)}</span>
+              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: T.textSecondary }}>{o.plazo}m</span>
+              <MoraCell value={o.d30} />
+              <MoraCell value={o.d60} />
+              <MoraCell value={o.d90} />
+              <MoraCell value={o.dmas90} severe />
+              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, fontWeight: 700, color: hasMora ? T.red : T.navy }}>{fmtShort(o.total)}</span>
+            </div>
+          );
+        })}
+        <div style={{ minWidth: 1050, display: "grid", gridTemplateColumns: "100px minmax(150px,1.8fr) 90px 55px 70px 70px 70px 80px 100px", padding: "10px 16px", background: T.surfaceAlt, borderTop: `2px solid ${T.border}`, gap: 4, fontSize: 11, fontWeight: 800, alignItems: "center" }}>
+          <span></span><span style={{ color: T.navy }}>TOTALES</span>
+          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: T.navy }}>{fmt(totalRentaMensual)}</span>
+          <span></span>
+          <MoraCell value={QUANTO_OPS.reduce((s,o)=>s+o.d30,0)} />
+          <MoraCell value={QUANTO_OPS.reduce((s,o)=>s+o.d60,0)} />
+          <MoraCell value={QUANTO_OPS.reduce((s,o)=>s+o.d90,0)} />
+          <MoraCell value={QUANTO_OPS.reduce((s,o)=>s+o.dmas90,0)} severe />
+          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, fontWeight: 800, color: T.navy }}>{fmtShort(totalSaldo)}</span>
+        </div>
+      </div>
     </div>
   );
 }
@@ -2104,7 +2158,7 @@ function ScrollTable({ columns, rows, gridCols, minWidth = 1100, renderCell, def
 // ═══════════════════════════════════════════════
 // OPERACIÓN — GENERAL
 // ═══════════════════════════════════════════════
-function OperacionGeneralSection({ onGoTab }) {
+function OperacionGeneralSection({ onGoSubTab }) {
   const totalActivos = ASSETS_REPORT.length;
   const totalFacturado = ASSETS_REPORT.reduce((s, a) => s + a.valorFactura, 0);
   const polizasVigentes = ASSETS_REPORT.filter(a => daysFromToday(a.fechaVencimientoPoliza) > 0).length;
@@ -2116,10 +2170,10 @@ function OperacionGeneralSection({ onGoTab }) {
   const aseguradoraTop = Object.entries(ASSETS_REPORT.reduce((acc, a) => { acc[a.aseguradora] = (acc[a.aseguradora] || 0) + 1; return acc; }, {})).sort((a, b) => b[1] - a[1])[0];
 
   const cards = [
-    { id: "op-colocacion", icon: "place", title: "Colocación", value: `${totalActivos} activos`, sub: `${fmtShort(totalFacturado)} facturados`, color: T.blue },
-    { id: "op-seguros", icon: "shield", title: "Seguros", value: `${polizasVigentes} vigentes`, sub: `${polizasPorVencer90} próximas · ${polizasVencidas} vencidas`, color: polizasVencidas > 0 ? T.red : T.green },
-    { id: "op-facturacion", icon: "receipt_long", title: "Facturación / Proveedores", value: `${proveedoresUnicos} proveedores`, sub: `${promDiasPago} días promedio de pago`, color: T.purple },
-    { id: "op-vencimientos", icon: "event_busy", title: "Vencimientos", value: `${terminados} terminados`, sub: `${totalActivos - terminados} arrendamientos activos`, color: T.amber },
+    { id: "colocacion", icon: "place", title: "Colocación", value: `${totalActivos} activos`, sub: `${fmtShort(totalFacturado)} facturados`, color: T.blue },
+    { id: "seguros", icon: "shield", title: "Seguros", value: `${polizasVigentes} vigentes`, sub: `${polizasPorVencer90} próximas · ${polizasVencidas} vencidas`, color: polizasVencidas > 0 ? T.red : T.green },
+    { id: "facturacion", icon: "receipt_long", title: "Facturación / Proveedores", value: `${proveedoresUnicos} proveedores`, sub: `${promDiasPago} días promedio de pago`, color: T.purple },
+    { id: "vencimientos", icon: "event_busy", title: "Vencimientos", value: `${terminados} terminados`, sub: `${totalActivos - terminados} arrendamientos activos`, color: T.amber },
   ];
 
   return (
@@ -2133,7 +2187,7 @@ function OperacionGeneralSection({ onGoTab }) {
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 14 }}>
         {cards.map(c => (
-          <button key={c.id} onClick={() => onGoTab && onGoTab(c.id)} className="hover-lift"
+          <button key={c.id} onClick={() => onGoSubTab && onGoSubTab(c.id)} className="hover-lift"
             style={{ ...opCard, padding: 20, cursor: "pointer", textAlign: "left", border: `1px solid ${T.border}`, fontFamily: "inherit" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
               <div style={{ width: 36, height: 36, borderRadius: 9, background: `${c.color}14`, color: c.color, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -2147,6 +2201,39 @@ function OperacionGeneralSection({ onGoTab }) {
           </button>
         ))}
       </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════
+// OPERACIÓN — ADMINISTRACIÓN DE ACTIVOS (wrapper)
+// ═══════════════════════════════════════════════
+function AdminActivosSection({ activeTab, onTabChange }) {
+  const tabs = [
+    { id: "colocacion", label: "Colocación" },
+    { id: "seguros", label: "Seguros" },
+    { id: "facturacion", label: "Facturación / Proveedores" },
+    { id: "vencimientos", label: "Vencimientos" },
+  ];
+
+  return (
+    <div style={{ animation: "fadeUp .5s ease" }}>
+      <div style={{ display: "flex", gap: 4, marginBottom: 18, background: T.surfaceAlt, borderRadius: T.radiusSm, padding: 3, width: "fit-content", flexWrap: "wrap" }}>
+        {tabs.map(t => {
+          const active = t.id === activeTab;
+          return (
+            <button key={t.id} onClick={() => onTabChange(t.id)}
+              style={{ padding: "7px 16px", border: "none", borderRadius: 5, background: active ? T.surface : "transparent", color: active ? T.navy : T.textTertiary, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", boxShadow: active ? T.shadow : "none" }}>
+              {t.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {activeTab === "colocacion" && <OperacionColocacionSection />}
+      {activeTab === "seguros" && <OperacionSegurosSection />}
+      {activeTab === "facturacion" && <OperacionFacturacionSection />}
+      {activeTab === "vencimientos" && <OperacionVencimientosSection />}
     </div>
   );
 }
